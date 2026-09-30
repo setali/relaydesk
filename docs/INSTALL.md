@@ -8,7 +8,7 @@ For a Linux server, run:
 curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash
 ```
 
-Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.4.0 application revision `2d05e0a615ef92db4a7412b478f7ad9b0519134b`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
+Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.4.1 application revision `2d05e0a615ef92db4a7412b478f7ad9b0519134b`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
 
 **Trust boundary:** the entry script is fetched from this repository's `main` branch. Its pinned archive checksum detects changed or incomplete downloads; it is not an independent signature against a compromised repository. Review the script before running it with root privileges. To inspect it first:
 
@@ -127,11 +127,27 @@ Review and check out a trusted release, then run `bash install.sh upgrade`. It a
 
 Bootstrap installations are source archives, not Git checkouts. For upgrades, back up data first, download and verify the next trusted source revision into a separate directory, and retain `.install.env` and `.https.env` (if enabled) from the old installation. Run the new directory's `install.sh upgrade` against the same Compose project/volume. Keep the old source and matching data backup for rollback. Rerunning `bootstrap.sh` will not overwrite an existing installation.
 
-For local operator password recovery, stop the service and run:
+For local operator password recovery, run:
 
 ```sh
-docker compose --project-name relaydesk --file compose.install.yaml --env-file .install.env run --rm --no-deps relaydesk node src/reset-password.js YOUR_USERNAME
-bash install.sh start
+relaydesk reset-password
 ```
 
-The recovery command prompts privately and revokes existing sessions. There is no unauthenticated web recovery route.
+Choose an account (the single administrator is the default). Enter and confirm a custom password, or press Enter to generate one. Confirm the change; a generated password is shown once after saving. Existing sessions for that account are revoked. Passwords are never command-line arguments. The command briefly stops the application and restores its previous running state after success, failure or cancellation. An already-stopped application stays stopped. There is no unauthenticated web recovery route.
+
+Run `relaydesk` for the interactive menu, or use:
+
+| Command                                                  | Action                                                                            |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `relaydesk info`                                         | Version, public URL and account names; never passwords or API tokens              |
+| `relaydesk status`                                       | Application container state                                                       |
+| `relaydesk start` / `stop` / `restart`                   | Control the application; start also starts a configured gateway                   |
+| `relaydesk logs`                                         | Latest 100 application log lines, then return                                     |
+| `relaydesk reset-password`                               | Custom or generated password recovery                                             |
+| `relaydesk change-username`                              | Rename an account and revoke its sessions                                         |
+| `relaydesk backup`                                       | Private offline data backup; restore previous service state                       |
+| `relaydesk https enable` / `status` / `logs` / `disable` | Manage the dedicated HTTPS gateway                                                |
+| `relaydesk upgrade`                                      | Build a reviewed source checkout after backup confirmation; no automatic download |
+| `relaydesk help`                                         | Commands, without needing Docker to be running                                    |
+
+In a manual checkout without the launcher, replace `relaydesk` with `bash install.sh`. Backups are saved under the installation's private `backups/backup-*` directory. They include the complete application data archive (database, runtime settings and encryption key), local port/gateway settings and package version. Treat them as credentials. Gateway certificate volumes and the full source release are not included; retain the matching source release and back up gateway storage separately. A failed backup directory is incomplete and must not be restored. Restoration is not automated: stop the service and follow a reviewed recovery procedure with the matching release and data snapshot.

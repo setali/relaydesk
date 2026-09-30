@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an interactive management menu, short account recovery commands, sanitized panel information, restart and private offline data backups with service-state restoration.
+
 - Reduce installation to one initial confirmation, the panel address, and one HTTPS confirmation; normal install/HTTPS prompts default to yes while EOF cancels safely.
 - Use local HTTP port 3210 without prompting; allow an explicit `RELAYDESK_HTTP_PORT` override. Upgrade and stop confirmations remain default-no.
 
