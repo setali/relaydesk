@@ -1,0 +1,24 @@
+services:
+  gateway:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      RELAYDESK_DOMAIN: ${RELAYDESK_DOMAIN:?Run the HTTPS setup first}
+      RELAYDESK_HTTP_PORT: ${RELAYDESK_HTTP_PORT:-3210}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - gateway-config:/config
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  certificates:
+  gateway-config:

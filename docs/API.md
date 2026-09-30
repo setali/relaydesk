@@ -1,5 +1,9 @@
 # Relaydesk API
 
+## HTTPS status (v0.3)
+
+`GET /api/https` is administrator-only and reports TLS trust and certificate expiry at the configured public origin. It accepts no destination parameter, caches results for one minute, and never changes gateway configuration. Demo mode performs no network probe.
+
 ## Account and server settings (v0.2)
 
 - `PATCH /api/account`: current user's `username`, `name`, `currentPassword`, optional `newPassword`. Verifies current credentials and revokes all sessions on success.

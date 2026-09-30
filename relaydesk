@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+location="$(readlink -f -- "${BASH_SOURCE[0]}")"
+exec bash "$(dirname -- "$location")/install.sh" "${@:-menu}"

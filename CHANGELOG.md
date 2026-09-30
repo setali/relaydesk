@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Optional managed HTTPS gateway with automatic certificate renewal, occupied-port checks and persistent certificate storage.
+- Server management menu and read-only HTTPS certificate status/expiry in Settings.
+
 - One-command Linux bootstrap with pinned-source SHA-256 verification and interactive setup; no Git clone required.
 - Opt-in Docker installation on clean supported Ubuntu/Debian servers; existing runtimes, installations and data are preserved.
 - Bootstrap tests for checksum rejection, cancellation, recovery, and existing-runtime/data safeguards.

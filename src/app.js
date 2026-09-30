@@ -6,6 +6,7 @@ import { openDatabase, audit } from './db.js';
 import { ThreeXUI, DemoPanel } from './panel.js';
 import { PanelStore } from './panel-store.js';
 import { settingsRoutes } from './settings.js';
+import { certificateStatus } from './https-status.js';
 import {
   assert,
   HttpError,
@@ -64,6 +65,11 @@ async function jsonBody(req) {
 }
 
 export async function createApp(config, overrides = {}) {
+  const getCertificateStatus = certificateStatus(
+    config.origin,
+    config.demo,
+    overrides.inspectCertificate,
+  );
   const db = openDatabase(config.database);
   const mode = config.demo ? 'demo' : 'live';
   const previousMode = db.prepare("SELECT value FROM metadata WHERE key='mode'").get()?.value;
@@ -242,6 +248,11 @@ export async function createApp(config, overrides = {}) {
         return;
       }
       if (await handleSettings({ path, req, user, send })) return;
+      if (path === '/api/https' && req.method === 'GET') {
+        assert(user.role === 'admin', 403, 'Only the workspace owner can inspect HTTPS.');
+        send(await getCertificateStatus());
+        return;
+      }
       if (path === '/api/logout' && req.method === 'POST') {
         db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash);
         res.setHeader('Set-Cookie', cookie('', 0));

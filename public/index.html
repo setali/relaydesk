@@ -152,8 +152,7 @@
                 <span class="eyebrow">BUILT FOR YOUR PEOPLE</span>
                 <h2>A workspace<br />of their own.</h2>
                 <p>Give each team member a clear view of their clients, with limits you control.</p>
-                <button id="reseller-shortcut" class="text-button admin-only">
-                  Manage team ↗</button
+                <button id="reseller-shortcut" class="text-button admin-only">Manage team ↗</button
                 ><span class="note-pattern" aria-hidden="true">↗</span>
               </article>
             </div>
@@ -260,6 +259,14 @@
               </article>
               <article class="table-card settings-card admin-only">
                 <span class="eyebrow">YOUR INFRASTRUCTURE</span>
+                <h2>HTTPS protection.</h2>
+                <p id="https-status" class="form-note" role="status">Not checked yet.</p>
+                <p class="muted">
+                  The public endpoint is checked from this server, at most once per minute. A CDN
+                  may present a different certificate from your local gateway. Manage HTTPS from the
+                  server with <code>sudo relaydesk https enable</code>. Managed certificates renew
+                  automatically while the gateway runs.
+                </p>
                 <h2>Connected servers.</h2>
                 <p class="muted">
                   Connect 3x-ui using a dedicated API token. Tokens are encrypted on the server and
@@ -291,7 +298,7 @@
           </section>
           <footer class="page-footer">
             <span>relaydesk <span class="muted">/ thoughtfully connected</span></span
-            ><span>Self-hosted · v0.2.0</span>
+            ><span>Self-hosted · v0.3.0</span>
           </footer>
         </main>
       </div>

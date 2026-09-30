@@ -72,6 +72,16 @@ async function fixture(t, adapter = new DemoPanel()) {
   return { ...app, request, login, admin, reseller, create, adapter };
 }
 
+test('HTTPS status is administrator-only and does not connect in demo mode', async (t) => {
+  const f = await fixture(t);
+  assert.equal((await f.request('/https')).status, 401);
+  const member = await f.reseller('https-member@example.com');
+  assert.equal((await f.request('/https', { session: member })).status, 403);
+  const result = await f.request('/https', { session: f.admin });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.status, 'demo');
+});
+
 test('sessions, origin and CSRF protect mutation; logout revokes the session', async (t) => {
   const f = await fixture(t);
   assert.equal((await f.request('/workspace')).status, 401);

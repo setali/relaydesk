@@ -40,6 +40,19 @@ export function initSettings({ api, state, escape, toast, showLogin, refresh }) 
     $('#account-form').elements.name.value = state.user.name;
     $('#account-form').elements.username.value = state.user.username || state.user.email;
     if (state.user.role !== 'admin') return;
+    $('#https-status').textContent = 'Checking the configured public endpoint…';
+    api('/https')
+      .then((result) => {
+        $('#https-status').textContent =
+          result.status === 'valid'
+            ? `Trusted certificate · expires ${new Date(result.expiresAt).toLocaleDateString()} · ${result.issuer}`
+            : result.status === 'demo'
+              ? 'Demo workspace — no public certificate is checked.'
+              : 'HTTPS could not be verified from this server. Check DNS, certificate trust and gateway logs.';
+      })
+      .catch(() => {
+        $('#https-status').textContent = 'Unable to check HTTPS.';
+      });
     const result = await api('/panels');
     panels = result.panels;
     $('#settings-demo-note').hidden = !result.demo;

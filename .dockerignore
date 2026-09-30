@@ -7,3 +7,4 @@ node_modules
 *.sqlite*
 *.key
 .install.env
+.https.env

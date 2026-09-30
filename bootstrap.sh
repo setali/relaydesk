@@ -88,7 +88,7 @@ main() {
     command -v "$tool" >/dev/null || die "Missing prerequisite: $tool"
   done
   check_destination
-  printf '\nRelaydesk · guided installation\nSource: https://github.com/setali/relaydesk\nRevision: %s\nDirectory: %s\n\nThis installs the management workspace only. It does not configure 3x-ui,\nVPN routing, DNS, certificates or your reverse proxy. HTTP binds to loopback.\nYou will need an HTTPS domain and proxy to use the panel remotely.\n' "$RELAYDESK_REVISION" "$RELAYDESK_DIRECTORY"
+  printf '\nRelaydesk · guided installation\nSource: https://github.com/setali/relaydesk\nRevision: %s\nDirectory: %s\n\nThis installs the management workspace only. It does not configure 3x-ui,\nVPN routing, DNS or existing proxies. HTTP binds to loopback.\nThe wizard can set up a dedicated HTTPS gateway with your confirmation.\n' "$RELAYDESK_REVISION" "$RELAYDESK_DIRECTORY"
   confirm 'Download and install Relaydesk?' || die 'Installation cancelled.'
   workdir="$(mktemp -d -t relaydesk-install.XXXXXXXX)"
   # Remove only the private, newly-created download directory. Never remove installation data.
@@ -111,7 +111,12 @@ main() {
   chmod 0755 "$RELAYDESK_DIRECTORY"
   printf '\nSource verified. Starting the setup wizard.\nIf interrupted, use: sudo bash /opt/relaydesk/install.sh\n'
   bash "$RELAYDESK_DIRECTORY/install.sh"
-  printf '\nManage Relaydesk: sudo bash /opt/relaydesk/install.sh status\nLogs: sudo bash /opt/relaydesk/install.sh logs\nNext: configure your HTTPS proxy as described in /opt/relaydesk/docs/INSTALL.md\n'
+  if [[ -f "$RELAYDESK_DIRECTORY/relaydesk" && ! -e /usr/local/bin/relaydesk && ! -L /usr/local/bin/relaydesk ]]; then
+    install -d -m 0755 /usr/local/bin
+    chmod 0755 "$RELAYDESK_DIRECTORY/relaydesk"
+    ln -s "$RELAYDESK_DIRECTORY/relaydesk" /usr/local/bin/relaydesk
+  fi
+  printf '\nManagement menu: sudo bash /opt/relaydesk/install.sh menu\nHTTPS setup/status: sudo bash /opt/relaydesk/install.sh https enable\nSee /opt/relaydesk/docs/HTTPS.md for DNS, certificate and shared-server guidance.\n'
 }
 
 # Keep execution at the end so an incomplete streamed download cannot start installation.

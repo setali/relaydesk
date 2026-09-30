@@ -10,6 +10,19 @@ settings_file='.install.env'
 compose=(docker compose --project-name relaydesk --file compose.install.yaml)
 if [[ -f "$settings_file" ]]; then compose+=(--env-file "$settings_file"); fi
 case "$command_name" in
+  menu)
+    [[ -t 0 ]] || { echo 'Open the menu in an interactive terminal.' >&2; exit 1; }
+    printf '\nRelaydesk\n1) Status\n2) Set up HTTPS\n3) HTTPS status / certificate expiry\n4) HTTPS logs\n5) Start services\n6) Stop application\n7) Upgrade current source checkout\n8) Stop managed HTTPS\n0) Exit\n'
+    read -r -p 'Choose: ' choice
+    case "$choice" in
+      1) exec bash install.sh status ;; 2) exec bash https.sh enable ;;
+      3) exec bash https.sh status ;; 4) exec bash https.sh logs ;;
+      5) exec bash install.sh start ;; 6) exec bash install.sh stop ;;
+      7) exec bash install.sh upgrade ;; 8) exec bash https.sh disable ;;
+      0) exit 0 ;; *) echo 'Unknown choice.' >&2; exit 1 ;;
+    esac
+    ;;
+  https) exec bash https.sh "${2:-status}" ;;
   install)
     if [[ -f "$settings_file" ]]; then
       echo 'Installer settings already exist. Run bash install.sh start, or use Settings in the panel.' >&2
@@ -18,7 +31,7 @@ case "$command_name" in
     [[ -t 0 ]] || { echo 'Run bash install.sh in an interactive terminal.' >&2; exit 1; }
     read -r -p 'Local HTTP port behind your HTTPS proxy [3210]: ' relaydesk_port
     relaydesk_port="${relaydesk_port:-3210}"
-    [[ "$relaydesk_port" =~ ^[1-9][0-9]{0,4}$ ]] && ((relaydesk_port <= 65535)) || { echo 'Invalid port.' >&2; exit 1; }
+    if [[ ! "$relaydesk_port" =~ ^[1-9][0-9]{0,4}$ ]] || ((relaydesk_port > 65535)); then echo 'Invalid port.' >&2; exit 1; fi
     "${compose[@]}" build
     # No host port is published by this one-shot wizard. The volume holds its DB and key.
     "${compose[@]}" run --rm --no-deps relaydesk node src/setup.js
@@ -27,8 +40,15 @@ case "$command_name" in
     "${compose[@]}" up -d --wait --wait-timeout 60
     printf '\nRelaydesk listens on 127.0.0.1:%s. Configure your HTTPS proxy to forward there.\n' "$relaydesk_port"
     echo 'Manage it with: bash install.sh status | logs | stop | start'
+    read -r -p 'Set up automatic HTTPS now? Requires a domain and free ports 80/443. [y/N]: ' setup_https
+    if [[ "$setup_https" == y || "$setup_https" == Y ]]; then
+      bash https.sh enable || echo 'Application installed. HTTPS is not confirmed; fix the reported issue and run bash install.sh https enable.' >&2
+    fi
     ;;
-  start) "${compose[@]}" up -d --wait --wait-timeout 60 ;;
+  start)
+    "${compose[@]}" up -d --wait --wait-timeout 60
+    if [[ -f .https.env ]]; then bash https.sh start; fi
+    ;;
   stop) "${compose[@]}" stop ;;
   status) "${compose[@]}" ps ;;
   logs) "${compose[@]}" logs --tail=100 -f ;;
@@ -39,5 +59,5 @@ case "$command_name" in
     "${compose[@]}" build
     "${compose[@]}" up -d --wait --wait-timeout 60
     ;;
-  *) echo 'Usage: bash install.sh [install|start|stop|status|logs|upgrade]' >&2; exit 1 ;;
+  *) echo 'Usage: bash install.sh [menu|install|start|stop|status|logs|upgrade|https]' >&2; exit 1 ;;
 esac

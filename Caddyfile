@@ -1,0 +1,10 @@
+{
+	admin off
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$RELAYDESK_DOMAIN} {
+	reverse_proxy 127.0.0.1:{$RELAYDESK_HTTP_PORT}
+}

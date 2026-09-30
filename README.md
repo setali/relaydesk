@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh 
 
 Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.2.0 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
 
-Existing Docker installations are left unchanged. If Docker is missing on Ubuntu 22.04/24.04 or Debian 12/13 (amd64/arm64), the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. HTTPS, DNS and reverse-proxy setup are still required and are never modified automatically.
+Existing Docker installations are left unchanged. If Docker is missing on Ubuntu 22.04/24.04 or Debian 12/13 (amd64/arm64), the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. DNS must be configured first. The wizard offers automatic HTTPS on free ports 80/443; an existing reverse proxy is never modified. See [HTTPS setup](docs/HTTPS.md).
 
 Alternatively, from a trusted source checkout with Docker and Compose already installed:
 
@@ -66,7 +66,7 @@ bash install.sh
 
 The wizard asks for a public HTTPS origin, an independent administrator login, and optionally a 3x-ui URL and token. It verifies read access, lists supported inbounds, and lets you approve them. Password/token entry is hidden. Leaving the administrator password blank generates one and displays it once.
 
-The installer builds this checkout, stores data in a named Docker volume, starts an unprivileged container, and binds HTTP only to loopback. Configure your existing HTTPS reverse proxy to forward to the selected local port. It does not change your firewall or existing services. You need no hand-edited `.env` for this path.
+The installer builds this checkout, stores data in a named Docker volume, starts an unprivileged container, and binds HTTP only to loopback. Choose managed HTTPS after setup, or configure your existing HTTPS reverse proxy to forward to the selected local port. It does not change your firewall or existing services. You need no hand-edited `.env` for this path.
 
 With Node.js already installed, the native alternative is:
 

@@ -1,6 +1,6 @@
 # Security
 
-Relaydesk is an early MVP, not a security-audited product. The current v0.2.x series is in scope for fixes.
+Relaydesk is an early MVP, not a security-audited product. The v0.2.x and v0.3.x series is in scope for fixes.
 
 If the repository has private vulnerability reporting enabled, use the Security tab to report a vulnerability privately. Do not put working credentials or another user's information in a public issue. Before public release, the maintainer must enable private reporting and publish a monitored contact.
 

@@ -60,7 +60,9 @@ If setup succeeded but startup failed, fix the conflict (such as a busy port) an
 
 ## HTTPS
 
-The container listens on host loopback only. Point your domain at the server and configure an HTTPS proxy to the chosen port. For a host-installed Caddy instance:
+Choose automatic HTTPS at the end of setup, or run `sudo relaydesk https enable`. See [HTTPS and the management menu](HTTPS.md) for automatic renewal, shared-server safeguards and recovery.
+
+For an existing proxy, the container listens on host loopback only. Point your domain at the server and configure an HTTPS proxy to the chosen port. For a host-installed Caddy instance:
 
 ```caddy
 relay.example.com {
@@ -68,7 +70,7 @@ relay.example.com {
 }
 ```
 
-Replace the hostname and port. Add this to your existing proxy configuration as appropriate; do not overwrite unrelated services. The browser origin must exactly match the setup origin. Certificates, DNS and proxy routing are operator-managed. A process health check does not verify them.
+Replace the hostname and port. Add this to your existing proxy configuration as appropriate; do not overwrite unrelated services. The browser origin must exactly match the setup origin. DNS and existing proxy routing are operator-managed; the optional dedicated gateway manages its own certificates. A process health check does not verify them.
 
 ## Getting a token
 
