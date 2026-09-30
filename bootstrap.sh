@@ -2,8 +2,8 @@
 # Public entry point. Downloads a reviewed source revision, never a moving archive.
 set -euo pipefail
 
-RELAYDESK_REVISION='c4104e07e0782f30414955c62e568a7dd670d5a7'
-RELAYDESK_SHA256='80380bdf8ba51f5224c51c8b6c6725fc37199a96b358504dbef8c6cb00592fd0'
+RELAYDESK_REVISION='1595a76a7fdc67d57bbb497882c9fbb5b593cb7f'
+RELAYDESK_SHA256='e2cd59be3cb6d7e8a283b68065ce690847b9e8eb74f5641c9390fc37772dabf8'
 RELAYDESK_DIRECTORY='/opt/relaydesk'
 resume_install=false
 
