@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Detect Ubuntu/Debian release codenames dynamically, including Ubuntu 26.04; require the exact release/architecture's official Docker package index before changing system packages.
+
 - Optional managed HTTPS gateway with automatic certificate renewal, occupied-port checks and persistent certificate storage.
 - Server management menu and read-only HTTPS certificate status/expiry in Settings.
 

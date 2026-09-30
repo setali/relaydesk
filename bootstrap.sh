@@ -37,15 +37,27 @@ check_docker() {
   [[ -z "$existing" ]] || \
     die 'An existing Relaydesk data volume was found. Preserve it and follow the recovery guide.'
 }
+docker_repository() {
+  local distro="$1" codename="$2" architecture="$3" package
+  case "$distro" in ubuntu|debian) ;; *) die 'Automatic Docker setup supports Ubuntu and Debian. Install Docker manually on other distributions.' ;; esac
+  [[ "$codename" =~ ^[a-z][a-z0-9-]*$ ]] || die 'Missing or invalid distribution codename; refusing to guess another release.'
+  case "$architecture" in amd64|arm64) ;; *) die 'Automatic setup supports amd64 and arm64 only.' ;; esac
+  download "https://download.docker.com/linux/$distro/dists/$codename/stable/binary-$architecture/Packages.gz" "$workdir/docker-packages.gz" || \
+    die "Cannot fetch Docker's official stable packages for $distro/$codename/$architecture. Check network access or install Docker manually. No packages were changed."
+  gzip -dc "$workdir/docker-packages.gz" > "$workdir/docker-packages" || die 'Invalid Docker package index. No packages were changed.'
+  for package in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do
+    grep -Fxq "Package: $package" "$workdir/docker-packages" || die "Docker's repository lacks $package for $distro/$codename/$architecture. No packages were changed."
+  done
+}
 install_docker() {
   # Never remove conflicting runtimes or overwrite an existing package repository.
   local ID='' VERSION_CODENAME='' architecture package status
   [[ -r /etc/os-release ]] || die 'Install Docker manually on this distribution.'
   # shellcheck source=/dev/null
   . /etc/os-release
-  case "$ID:$VERSION_CODENAME" in
-    ubuntu:jammy|ubuntu:noble|debian:bookworm|debian:trixie) ;;
-    *) die 'Automatic Docker setup supports Ubuntu 22.04/24.04 and Debian 12/13 only. Install Docker manually, then rerun.' ;;
+  case "$ID" in
+    ubuntu|debian) ;;
+    *) die 'Automatic Docker setup supports Ubuntu and Debian. Install Docker manually on other distributions.' ;;
   esac
   for package in docker.io docker-compose docker-compose-v2 docker-doc docker-buildx podman-docker containerd runc docker-ce docker-ce-cli containerd.io; do
     status="$(dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null || true)"
@@ -62,6 +74,7 @@ install_docker() {
   case "$architecture" in amd64|arm64) ;; *) die 'Automatic setup supports amd64 and arm64 only.' ;; esac
   printf '\nDocker is not installed. Optional setup will add Docker\047s official apt repository,\ninstall Docker Engine, Compose, Buildx and containerd, and start Docker.\nDocker creates system networking/firewall rules. Review this on shared servers.\nNo existing packages will be removed, and no users will be added to the docker group.\n'
   confirm 'Install these system packages now?' || die 'Docker installation declined. No system packages were changed.'
+  docker_repository "$ID" "$VERSION_CODENAME" "$architecture"
   apt-get update
   apt-get install -y --no-remove ca-certificates curl
   download "https://download.docker.com/linux/$ID/gpg" "$workdir/docker.asc"
@@ -84,7 +97,7 @@ main() {
   [[ "${1:-}" != --help ]] || { printf 'Relaydesk first-time installer: sudo bash bootstrap.sh\nInstalls reviewed source under /opt/relaydesk. Requires a terminal and HTTPS reverse proxy.\n'; return; }
   [[ $# == 0 ]] || die 'Usage: sudo bash bootstrap.sh [--help]'
   require_terminal
-  for tool in curl tar sha256sum mktemp install grep; do
+  for tool in curl tar gzip sha256sum mktemp install grep; do
     command -v "$tool" >/dev/null || die "Missing prerequisite: $tool"
   done
   check_destination

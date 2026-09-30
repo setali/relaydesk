@@ -7,7 +7,11 @@ source /workspace/bootstrap.sh
 workdir="$(mktemp -d)"
 export workdir
 apt-get() { printf '%s\n' "$*" >> "$workdir/packages.log"; }
-download() { printf 'synthetic test key\n' > "$2"; }
+download() {
+  if [[ "$1" == *Packages.gz ]]; then
+    printf 'Package: %s\n' docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin | gzip > "$2"
+  else printf 'synthetic test key\n' > "$2"; fi
+}
 dpkg-query() { return 1; }
 confirm() { return 0; }
 
@@ -17,6 +21,10 @@ if (confirm() { return 1; }; install_docker); then echo 'Decline unexpectedly su
 
 if (dpkg-query() { printf installed; }; install_docker); then echo 'Runtime conflict unexpectedly succeeded'; exit 1; fi
 [[ ! -e "$workdir/packages.log" ]]
+
+if (download() { return 22; }; install_docker); then echo 'Missing repository unexpectedly accepted'; exit 1; fi
+[[ ! -e "$workdir/packages.log" ]]
+[[ ! -e /etc/apt/sources.list.d/relaydesk-docker.sources ]]
 
 install_docker
 [[ "$(wc -l < "$workdir/packages.log")" == 4 ]]
