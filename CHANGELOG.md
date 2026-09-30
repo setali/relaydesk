@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Detect public IPv4 during setup and use it as the panel address when Enter is pressed; allow manual overrides and fall back to manual input if detection fails.
+
 - Combine application/prerequisite consent, retry blank or invalid panel addresses, and support public IPv4 HTTPS with short-lived ACME certificates.
 - Recover interrupted first-time setup into a new source directory only after checking existing data is empty (`--resume`).
 

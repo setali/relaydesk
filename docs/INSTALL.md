@@ -43,7 +43,7 @@ bash install.sh
 
 The local `install.sh` requires Bash, Docker Engine, Compose with `up --wait-timeout`, and permission to use Docker. It builds the downloaded source and runs the wizard; dependency installation belongs to `bootstrap.sh` only.
 
-The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), independent Relaydesk username/email/password, and optionally the first 3x-ui connection. For that connection, supply the full panel URL, API token, optional subscription URL, and approved inbound IDs. Select Vision only when required by a VLESS inbound. Password and token input are hidden. Leaving the password blank generates one and displays it once.
+The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), independent Relaydesk username/email/password, and optionally the first 3x-ui connection. It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server. For that connection, supply the full panel URL, API token, optional subscription URL, and approved inbound IDs. Select Vision only when required by a VLESS inbound. Password and token input are hidden. Leaving the password blank generates one and displays it once.
 
 Failed panel verification stops before creating an installation. Existing databases are never overwritten. You can skip the panel and add it in Settings later. No hand-edited `.env` is required.
 

@@ -8,6 +8,7 @@ import { configFromEnv } from './config.js';
 import { loginName, email, password, token } from './security.js';
 import { ThreeXUI } from './panel.js';
 import { validatePanel } from './panel-store.js';
+import { detectPublicIPv4, publicIPv4 } from './public-ip.js';
 
 export async function runSetup({
   ask,
@@ -15,6 +16,7 @@ export async function runSetup({
   runtimeFile,
   discover = (panel) => new ThreeXUI(panel).discover(),
   host = '127.0.0.1',
+  detectAddress = async () => '',
 }) {
   const file = resolve(runtimeFile),
     directory = dirname(file),
@@ -24,14 +26,26 @@ export async function runSetup({
       'An installation already exists here. Use Settings to change credentials or servers. Setup never overwrites an existing database.',
     );
   print('Relaydesk setup · independent login, encrypted panel credentials');
+  let defaultAddress = '';
+  try {
+    defaultAddress = publicIPv4(await detectAddress());
+  } catch {
+    /* Manual input remains available. */
+  }
+  if (defaultAddress)
+    print(
+      `Detected public IPv4: ${defaultAddress}. Press Enter to use it, or enter another IP/domain. Behind NAT, verify this address reaches this server.`,
+    );
+  else print('Public IPv4 could not be detected. Enter your server IP or domain manually.');
   let origin;
   // Empty or malformed input is recoverable, before collecting credentials or writing data.
   for (;;) {
-    const answer = (
-      await ask(
-        'Panel address: domain or public IPv4 (for example relay.example.com or your server IP): ',
-      )
-    ).trim();
+    const answer =
+      (
+        await ask(
+          `Panel address: domain or public IPv4${defaultAddress ? ` [${defaultAddress}]` : ''}: `,
+        )
+      ).trim() || defaultAddress;
     if (!answer) {
       print('Enter a domain or IP address. This cannot be blank.');
       continue;
@@ -154,6 +168,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   });
   try {
     await runSetup({
+      detectAddress: detectPublicIPv4,
       runtimeFile: process.env.RELAYDESK_CONFIG || './data/runtime.json',
       host: process.env.HOST || '127.0.0.1',
       print: (message) => console.log(message),
