@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- One-command Linux bootstrap with pinned-source SHA-256 verification and interactive setup; no Git clone required.
+- Opt-in Docker installation on clean supported Ubuntu/Debian servers; existing runtimes, installations and data are preserved.
+- Bootstrap tests for checksum rejection, cancellation, recovery, and existing-runtime/data safeguards.
+
 ## 0.2.0 — Installer and settings
 
 - Guided Docker/native setup, hidden credential entry, and generated-password support.

@@ -13,4 +13,6 @@ This repository is prepared for an initial public source release, not an asserti
 - Add a screenshot of synthetic demo data and a factual compatibility table.
 - Tag a pre-1.0 release and list the known limitations explicitly.
 
+For a new bootstrap target, publish the reviewed application commit first. Download its immutable GitHub source archive, compute SHA-256, and update both pins in `bootstrap.sh` together. Update the pinned revision in INSTALL.md, run bootstrap tests and verify a fresh installation before publishing the entry script. The bootstrap may intentionally target an earlier tested application revision; never replace its archive URL with a moving branch or disable checksum verification.
+
 Suggested portfolio description after verification: “Built a dependency-free, self-hosted team workspace with tenant isolation, quota reservation, recoverable remote operations, and a tested 3x-ui API integration boundary.” Do not claim real-panel compatibility or security audit results that have not been demonstrated.

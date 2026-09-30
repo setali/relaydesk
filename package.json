@@ -16,6 +16,6 @@
     "demo": "node src/demo.js",
     "reset-password": "node --env-file-if-exists=.env src/reset-password.js",
     "test": "node --test test/*.test.js",
-    "check": "node --check src/server.js && node --check public/app.js && node --check public/settings.js && bash -n install.sh && npm test"
+    "check": "node --check src/server.js && node --check public/app.js && node --check public/settings.js && bash -n install.sh && bash -n bootstrap.sh && npm test"
   }
 }

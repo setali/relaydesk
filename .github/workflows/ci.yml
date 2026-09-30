@@ -13,5 +13,9 @@ jobs:
         with:
           node-version: '24.12.0'
       - run: npm run check
+      - name: Check bootstrap shell safety
+        run: docker run --rm --network none -v "$PWD:/mnt:ro" koalaman/shellcheck:v0.10.0@sha256:2097951f02e735b613f4a34de20c40f937a6c8f18ecb170612c88c34517221fb /mnt/bootstrap.sh
+      - name: Test Docker package setup without installing packages
+        run: docker run --rm --read-only --network none --tmpfs /tmp --tmpfs /etc/apt/keyrings --tmpfs /etc/apt/sources.list.d -e RELAYDESK_PACKAGE_FIXTURE=1 -v "$PWD:/workspace:ro" debian:bookworm-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251 bash /workspace/test/bootstrap-packages.sh
       - run: docker build -t relaydesk:ci .
       - run: docker run --rm -i --read-only --tmpfs /tmp --cap-drop=ALL --security-opt=no-new-privileges:true relaydesk:ci node --input-type=module < test/container-smoke.mjs
