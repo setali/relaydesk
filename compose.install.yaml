@@ -1,0 +1,22 @@
+services:
+  relaydesk:
+    build: .
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      RELAYDESK_CONFIG: /app/data/runtime.json
+      DATABASE_PATH: /app/data/relaydesk.sqlite
+    ports:
+      - '127.0.0.1:${RELAYDESK_HTTP_PORT:-3210}:3210'
+    volumes:
+      - relaydesk-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+volumes:
+  relaydesk-data:

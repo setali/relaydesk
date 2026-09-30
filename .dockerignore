@@ -1,0 +1,9 @@
+.git
+.env*
+data
+test
+docs
+node_modules
+*.sqlite*
+*.key
+.install.env

@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#173b35" />
+    <title>Relaydesk · Your network, thoughtfully managed</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <section id="login" hidden>
+      <div class="login-story">
+        <a class="brand" href="/"
+          ><img src="/favicon.svg" alt="" width="36" height="36" />relaydesk<span class="version"
+            >/ 01</span
+          ></a
+        >
+        <div>
+          <span class="eyebrow">A SMALLER CONTROL ROOM</span>
+          <h1>Your network.<br />Your people.<br />One clear view.</h1>
+          <p>A considered workspace for the people<br />and connections you look after.</p>
+        </div>
+        <span class="story-footer">SELF-HOSTED BY DESIGN. OPEN BY NATURE.</span>
+      </div>
+      <div class="login-form">
+        <form id="login-form">
+          <span class="eyebrow">WELCOME BACK</span>
+          <h2>Find your flow.</h2>
+          <p class="muted">Sign in to your Relaydesk workspace.</p>
+          <label
+            >Username or email<input
+              name="username"
+              type="text"
+              autocomplete="username"
+              placeholder="Your Relaydesk username"
+              required /></label
+          ><label
+            >Password<input
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+              maxlength="128"
+          /></label>
+          <p id="login-error" class="error" role="alert"></p>
+          <button class="primary" type="submit">Enter workspace <span>↗</span></button>
+          <p class="login-note">Your workspace administrator manages access.</p>
+        </form>
+      </div>
+    </section>
+    <div id="workspace" hidden>
+      <aside class="sidebar">
+        <a class="brand" href="/"
+          ><img src="/favicon.svg" alt="" width="34" height="34" />relaydesk</a
+        ><span class="workspace-label">YOUR WORKSPACE</span>
+        <nav aria-label="Main navigation">
+          <button data-view="overview" class="nav active"><span>◫</span> Overview</button
+          ><button data-view="clients" class="nav">
+            <span>⇄</span> Clients <span id="nav-count" class="nav-count">0</span></button
+          ><button data-view="resellers" class="nav admin-only"><span>♧</span> Team</button
+          ><button data-view="activity" class="nav"><span>◷</span> Activity</button>
+          <button data-view="settings" class="nav"><span>⚙</span> Settings</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="connection">
+            <span class="dot"></span><span id="mode-label">Workspace ready</span>
+          </div>
+          <div class="profile">
+            <span class="avatar" id="avatar">A</span>
+            <div><strong id="profile-name"></strong><small id="profile-role"></small></div>
+            <button id="logout" class="icon-button" aria-label="Sign out" title="Sign out">
+              ↗
+            </button>
+          </div>
+        </div>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <div>
+            <span class="muted">Workspace</span><span class="slash">/</span
+            ><span id="breadcrumb">Overview</span>
+          </div>
+          <div class="topbar-right">
+            <button id="logout-mobile" class="icon-button mobile-only" aria-label="Sign out">
+              ↗
+            </button>
+            <span id="demo-badge" class="badge" hidden>DEMO WORKSPACE</span><span id="today"></span>
+          </div>
+        </header>
+        <main>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow" id="page-eyebrow">THE BIG PICTURE</span>
+              <h1 id="page-title">A little clarity. A lot of control.</h1>
+              <p id="page-description" class="muted">
+                Your connections and the people behind them, all in one place.
+              </p>
+            </div>
+            <div class="actions">
+              <button id="sync" class="secondary">↻ <span>Sync usage</span></button
+              ><button id="new-client" class="primary">＋ New client</button>
+            </div>
+          </div>
+          <section id="overview-panel">
+            <div class="stats">
+              <article class="stat">
+                <span>Total clients <span>↗</span></span
+                ><strong id="stat-clients">0</strong><small id="stat-active">0 enabled</small>
+              </article>
+              <article class="stat">
+                <span>Recorded usage <span>◴</span></span
+                ><strong id="stat-usage">0 <em>GiB</em></strong
+                ><small>Upload + download · current clients</small>
+              </article>
+              <article class="stat">
+                <span>Allocated quota <span>⊞</span></span
+                ><strong id="stat-quota">0 <em>GiB</em></strong
+                ><small>Reserved across current clients</small>
+              </article>
+              <article class="stat accent">
+                <span>Expiring soon <span>◷</span></span
+                ><strong id="stat-expiring">0</strong><small>Within the next 7 days</small>
+              </article>
+            </div>
+            <div class="overview-grid">
+              <article class="usage-card">
+                <div class="card-heading">
+                  <div>
+                    <span class="eyebrow">NETWORK PULSE</span>
+                    <h2>Room to keep moving.</h2>
+                  </div>
+                  <span class="pill">Usage / allocation</span>
+                </div>
+                <div class="usage-total">
+                  <strong id="usage-percent">0%</strong>
+                  <p>of allocated traffic<br /><span class="muted">has been used</span></p>
+                </div>
+                <div class="segmented-bar" id="usage-bar" aria-label="Traffic usage"></div>
+                <div class="usage-legend">
+                  <span
+                    ><i class="legend-dot"></i> Download <strong id="download-value"></strong></span
+                  ><span
+                    ><i class="legend-dot upload"></i> Upload
+                    <strong id="upload-value"></strong></span
+                  ><span id="usage-freshness" class="muted">Waiting for a sync</span>
+                </div>
+              </article>
+              <article class="note-card">
+                <span class="eyebrow">BUILT FOR YOUR PEOPLE</span>
+                <h2>A workspace<br />of their own.</h2>
+                <p>Give each team member a clear view of their clients, with limits you control.</p>
+                <button id="reseller-shortcut" class="text-button admin-only">
+                  Manage team ↗</button
+                ><span class="note-pattern" aria-hidden="true">↗</span>
+              </article>
+            </div>
+          </section>
+          <section id="clients-panel" class="table-card">
+            <div class="table-heading">
+              <div>
+                <h2>Your connections <span id="table-count" class="count">0</span></h2>
+                <p class="muted">Every client. A clear picture.</p>
+              </div>
+              <label class="search"
+                ><span>⌕</span
+                ><input
+                  id="search"
+                  type="search"
+                  aria-label="Search clients"
+                  placeholder="Find a client…"
+              /></label>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Client / owner</th>
+                    <th>Connection</th>
+                    <th>Usage / quota</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="client-rows"></tbody>
+              </table>
+            </div>
+            <div id="empty-clients" class="empty" hidden>
+              <strong>Your first connection starts here.</strong>
+              <p>Create a client using an approved connection template.</p>
+            </div>
+            <footer class="table-footer">
+              <span>Only clients managed by Relaydesk appear here.</span
+              ><span id="table-summary"></span>
+            </footer>
+          </section>
+          <section id="resellers-panel" hidden>
+            <div class="section-heading">
+              <h2>Independent spaces. Shared infrastructure.</h2>
+              <button id="new-reseller" class="primary">＋ Add member</button>
+            </div>
+            <div id="reseller-cards" class="reseller-grid"></div>
+          </section>
+          <section id="activity-panel" class="table-card" hidden>
+            <div class="table-heading">
+              <h2>Workspace activity</h2>
+              <span class="muted">Most recent 30 events</span>
+            </div>
+            <div id="activity-list"></div>
+          </section>
+          <section id="settings-panel" hidden>
+            <div class="settings-grid">
+              <article class="table-card settings-card">
+                <span class="eyebrow">YOUR ACCOUNT</span>
+                <h2>Make it yours.</h2>
+                <p class="muted">
+                  Your Relaydesk login is independent of 3x-ui. Saving signs out all your sessions.
+                </p>
+                <form id="account-form">
+                  <label
+                    >Display name<input name="name" required maxlength="80" autocomplete="name"
+                  /></label>
+                  <label
+                    >Username<input
+                      name="username"
+                      required
+                      minlength="3"
+                      maxlength="254"
+                      autocomplete="username"
+                  /></label>
+                  <label
+                    >Current password<input
+                      name="currentPassword"
+                      type="password"
+                      autocomplete="current-password"
+                      maxlength="128"
+                      required
+                  /></label>
+                  <label
+                    >New password (optional)<input
+                      name="newPassword"
+                      type="password"
+                      autocomplete="new-password"
+                      minlength="12"
+                      maxlength="128"
+                  /></label>
+                  <label
+                    >Confirm new password<input
+                      name="confirmPassword"
+                      type="password"
+                      autocomplete="new-password"
+                      maxlength="128"
+                  /></label>
+                  <p class="error" role="alert"></p>
+                  <button class="primary" type="submit">Save account & sign out</button>
+                </form>
+              </article>
+              <article class="table-card settings-card admin-only">
+                <span class="eyebrow">YOUR INFRASTRUCTURE</span>
+                <h2>Connected servers.</h2>
+                <p class="muted">
+                  Connect 3x-ui using a dedicated API token. Tokens are encrypted on the server and
+                  never returned to this page.
+                </p>
+                <p id="settings-demo-note" class="form-note" hidden>
+                  Demo mode uses sample infrastructure. Run the installer to connect a real server.
+                </p>
+                <button id="add-server" class="primary" type="button">＋ Connect server</button>
+                <div id="server-list"></div>
+                <details class="token-help">
+                  <summary>Where do I get an API token?</summary>
+                  <p>
+                    In token-capable 3x-ui releases, open Panel Settings → API Tokens and create a
+                    dedicated token for Relaydesk. Copy it once into this form. If that section is
+                    missing, check your release: this adapter requires bearer authentication and the
+                    v2 inbound API. A successful probe checks read access; test a disposable client
+                    before relying on write compatibility.
+                  </p>
+                  <a
+                    href="https://github.com/MHSanaei/3x-ui"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Official 3x-ui project ↗</a
+                  >
+                </details>
+              </article>
+            </div>
+          </section>
+          <footer class="page-footer">
+            <span>relaydesk <span class="muted">/ thoughtfully connected</span></span
+            ><span>Self-hosted · v0.2.0</span>
+          </footer>
+        </main>
+      </div>
+    </div>
+    <dialog id="server-dialog">
+      <form id="server-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">CONNECT 3X-UI</span>
+            <h2>Server settings</h2>
+          </div>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <div class="form-grid">
+          <label
+            >Server ID<input
+              name="id"
+              required
+              pattern="[a-z0-9-]{1,40}"
+              placeholder="germany" /></label
+          ><label
+            >Display name<input name="name" required maxlength="80" placeholder="Germany"
+          /></label>
+        </div>
+        <label
+          >Full HTTPS panel URL<input
+            name="baseUrl"
+            type="url"
+            required
+            placeholder="https://panel.example.com/private-path"
+        /></label>
+        <label
+          >API token<input
+            name="token"
+            type="password"
+            maxlength="4096"
+            autocomplete="off"
+            placeholder="Paste token; leave blank to keep an existing token"
+        /></label>
+        <p class="form-note">
+          In compatible Sanaei releases: Panel Settings → API Tokens. The panel login password is
+          not an API token.
+        </p>
+        <label
+          >Subscription HTTPS base URL (optional)<input
+            name="subscriptionBaseUrl"
+            type="url"
+            placeholder="https://subscriptions.example.com/sub"
+        /></label>
+        <button id="probe-server" class="secondary" type="button">
+          Test connection & discover inbounds
+        </button>
+        <div id="inbound-options" class="inbound-options"></div>
+        <p id="probe-note" class="form-note" role="status"></p>
+        <p class="error" role="alert"></p>
+        <button class="primary" type="submit">Save server</button>
+      </form>
+    </dialog>
+    <dialog id="remove-server-dialog">
+      <form id="remove-server-form">
+        <div class="dialog-heading">
+          <h2>Remove server?</h2>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <p class="form-note">
+          Only servers without managed clients can be removed. This removes the saved connection and
+          token; it does not uninstall 3x-ui.
+        </p>
+        <p class="error" role="alert"></p>
+        <button class="danger" type="submit">Remove server connection</button>
+      </form>
+    </dialog>
+    <dialog id="client-dialog">
+      <form id="client-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">MAKE A CONNECTION</span>
+            <h2>New client</h2>
+          </div>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <label
+          >Client name<input
+            name="name"
+            required
+            maxlength="80"
+            placeholder="e.g. Sara’s phone" /></label
+        ><label class="admin-only">Owner<select name="ownerId" id="owner-options"></select></label
+        ><label
+          >Connection template<select name="template" id="template-options" required></select
+        ></label>
+        <div class="form-grid">
+          <label
+            >Traffic allowance (GiB)<input
+              name="quotaGB"
+              type="number"
+              min="1"
+              max="1000000"
+              value="50"
+              required /></label
+          ><label
+            >Valid for (days)<input name="days" type="number" min="1" max="365" value="30" required
+          /></label>
+        </div>
+        <p class="form-note">
+          Allowance is reserved from the owner’s allocation. A client stops at its panel-enforced
+          traffic or expiry limit.
+        </p>
+        <p class="error" role="alert"></p>
+        <button class="primary" type="submit">Create client ↗</button>
+      </form>
+    </dialog>
+    <dialog id="reseller-dialog">
+      <form id="reseller-form">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">GROW YOUR WORKSPACE</span>
+            <h2>Add member</h2>
+          </div>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <label
+          >Name<input name="name" required maxlength="80" placeholder="Studio or person" /></label
+        ><label>Email<input name="email" type="email" autocomplete="off" required /></label
+        ><label
+          >Initial password<input
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="128"
+            required
+        /></label>
+        <div class="form-grid">
+          <label
+            >Client slots<input
+              name="maxClients"
+              type="number"
+              min="1"
+              max="10000"
+              value="20"
+              required /></label
+          ><label
+            >Allocation budget (GiB)<input
+              name="quotaGB"
+              type="number"
+              min="1"
+              max="1000000"
+              value="500"
+              required
+          /></label>
+        </div>
+        <p class="form-note">
+          The team member can manage their own clients on the approved templates. Share credentials
+          privately.
+        </p>
+        <p class="error" role="alert"></p>
+        <button class="primary" type="submit">Create workspace ↗</button>
+      </form>
+    </dialog>
+    <dialog id="delete-dialog">
+      <form id="delete-form">
+        <div class="dialog-heading">
+          <h2>Remove this client?</h2>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <p>
+          This revokes the connection on the panel. Allocation is released only after the panel
+          confirms removal.
+        </p>
+        <p class="error" role="alert"></p>
+        <button class="danger" type="submit">Remove client</button>
+      </form>
+    </dialog>
+  </body>
+</html>
