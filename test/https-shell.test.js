@@ -21,14 +21,14 @@ function run(t, mode, extra = '') {
 source "$FIXTURE/https.sh"
 https_terminal() { :; }
 ss() { if [[ "$MODE" == host-busy ]]; then echo LISTEN; fi; }
-getent() { if [[ "$MODE" == dns-failed ]]; then return 1; fi; echo '203.0.113.1 relay.example.com'; }
+getent() { if [[ "$MODE" == dns-failed || "$MODE" == ip ]]; then return 1; fi; echo '203.0.113.1 relay.example.com'; }
 docker() {
   printf '%s\\n' "$*" >> "$FIXTURE/calls"
   case "$*" in
     'ps --format'*) if [[ "$MODE" == docker-busy ]]; then echo '0.0.0.0:443->443/tcp'; fi ;;
     'ps -aq'*) if [[ "$MODE" == project-exists ]]; then echo old; fi ;;
     'volume ls'*) if [[ "$MODE" == volume-exists ]]; then echo old; fi ;;
-    *'https-cli.js domain') echo relay.example.com ;;
+    *'https-cli.js domain') if [[ "$MODE" == ip ]]; then echo 8.8.8.8; else echo relay.example.com; fi ;;
   esac
 }
 ${extra}
@@ -70,12 +70,21 @@ test('HTTPS setup requires consent, then validates before starting dedicated gat
   assert.equal(success.result.status, 0, success.result.stderr);
   assert.equal(
     readFileSync(join(success.directory, '.https.env'), 'utf8'),
-    'RELAYDESK_DOMAIN=relay.example.com\n',
+    'RELAYDESK_DOMAIN=relay.example.com\nRELAYDESK_CADDYFILE=Caddyfile\n',
   );
   assert.ok(success.calls.indexOf('caddy validate') < success.calls.indexOf(' up -d'));
   assert.doesNotMatch(success.calls, / stop| restart| down/);
   assert.match(success.result.stdout, /issuance may still be pending/);
 });
+test('public IPv4 selects short-lived ACME configuration without DNS', (t) => {
+  const output = run(t, 'ip');
+  assert.equal(output.result.status, 0, output.result.stderr);
+  assert.match(
+    readFileSync(join(output.directory, '.https.env'), 'utf8'),
+    /RELAYDESK_CADDYFILE=Caddyfile.ip/,
+  );
+});
+
 test('HTTPS setup preserves an existing configuration', (t) => {
   const output = run(
     t,

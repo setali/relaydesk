@@ -1,0 +1,15 @@
+{
+	admin off
+	servers {
+		protocols h1 h2
+	}
+}
+
+https://{$RELAYDESK_DOMAIN} {
+	tls {
+		issuer acme https://acme-v02.api.letsencrypt.org/directory {
+			profile shortlived
+		}
+	}
+	reverse_proxy 127.0.0.1:{$RELAYDESK_HTTP_PORT}
+}

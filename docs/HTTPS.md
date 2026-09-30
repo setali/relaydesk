@@ -12,11 +12,11 @@ sudo relaydesk https status
 sudo relaydesk https logs
 ```
 
-The Linux-only managed gateway uses a separate, pinned Caddy container and Compose project `relaydesk-https`. It serves only the hostname from the application's saved origin. No second hostname or origin rewrite is performed. A public DNS name on standard port 443 is required; IP-only certificates, wildcard names and DNS-provider integrations are not implemented.
+The Linux-only managed gateway uses a separate, pinned Caddy container and Compose project `relaydesk-https`. It serves only the hostname or public IPv4 from the application's saved origin. No second hostname or origin rewrite is performed. A public DNS name or public IPv4 on standard port 443 is required. Public IPv4 uses Caddy 2.11.4 with an explicit Let’s Encrypt shortlived issuer, not a self-signed certificate. IP certificates expire after about six days; keep renewal running. IPv6-only managed issuance, wildcard names and DNS-provider integrations are not implemented. Private/reserved IPv4 ranges are rejected.
 
 Before enabling:
 
-1. Point every A/AAAA record for the hostname to this server. Remove stale IPv6 records if the server has no working IPv6.
+1. For a hostname, point every A/AAAA record to this server. For IP mode, enter this server’s public IPv4; no DNS record is needed. Remove stale IPv6 records if the server has no working IPv6.
 2. Ensure inbound TCP 80 and 443 reach this server. Adjust your firewall yourself if needed.
 3. Confirm those ports are free. The installer checks host listeners and Docker published ports and refuses existing gateway projects/data rather than taking them over.
 4. Review the explicit public-exposure confirmation. DNS resolution is checked, but it cannot prove external routing or firewall reachability.
@@ -48,8 +48,8 @@ sudo relaydesk stop          # stops only the app; gateway stays up and keeps re
 
 There is no force-renew button: Caddy schedules renewal itself. If renewal fails, fix connectivity/DNS/CAA issues and inspect logs. Repeated forced issuance risks CA rate limits.
 
-`.https.env` contains the public hostname only and is created with mode 0600. `.install.env` supplies the local upstream port. Preserve both when upgrading. Never change the hostname without coordinating the application's stored origin; domain-change automation is not part of this release.
+`.https.env` contains the public hostname/IP and selected gateway configuration and is created with mode 0600. `.install.env` supplies the local upstream port. Preserve both when upgrading. Never change the hostname without coordinating the application's stored origin; domain-change automation is not part of this release.
 
 The dedicated volumes `relaydesk-https_certificates` and `relaydesk-https_gateway-config` hold gateway state. Back them up privately with your normal volume-backup procedure. They are separate from the application database/key volume. No stop command removes volumes or certificates. If setup fails after creating `.https.env`, keep it and use `https start` after resolving the error. If gateway storage exists but that file is missing, restore the file from backup instead of rerunning enable.
 
-Implementation reference: [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https). Public certificate issuance still needs a real domain and must be verified on the destination host before production use.
+Implementation reference: [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https). Public certificate issuance still needs a reachable public domain or IPv4 and must be verified on the destination host before production use.

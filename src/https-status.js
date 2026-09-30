@@ -1,5 +1,24 @@
 import { connect } from 'node:tls';
-import { isIP } from 'node:net';
+import { isIP, BlockList } from 'node:net';
+
+const nonPublic = new BlockList();
+for (const [address, prefix] of [
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['100.64.0.0', 10],
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.0.0.0', 24],
+  ['192.0.2.0', 24],
+  ['192.168.0.0', 16],
+  ['198.18.0.0', 15],
+  ['198.51.100.0', 24],
+  ['203.0.113.0', 24],
+  ['224.0.0.0', 4],
+  ['240.0.0.0', 4],
+])
+  nonPublic.addSubnet(address, prefix, 'ipv4');
 
 export function managedDomain(origin) {
   const url = new URL(origin);
@@ -12,14 +31,14 @@ export function managedDomain(origin) {
     url.pathname !== '/' ||
     url.search ||
     url.hash ||
-    isIP(host) ||
+    (isIP(host) === 4 && nonPublic.check(host, 'ipv4')) ||
     host.length > 253 ||
     !host.includes('.') ||
     host.split('.').some((label) => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label)) ||
     /\.(local|localhost|internal|test|invalid|example)$|\.home\.arpa$|\.ts\.net$/i.test(host)
   ) {
     throw new Error(
-      'Managed HTTPS needs a public DNS hostname on port 443, matching the configured HTTPS origin.',
+      'Managed HTTPS needs a public DNS hostname or public IPv4 on port 443, matching the configured HTTPS origin.',
     );
   }
   return host;

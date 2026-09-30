@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Combine application/prerequisite consent, retry blank or invalid panel addresses, and support public IPv4 HTTPS with short-lived ACME certificates.
+- Recover interrupted first-time setup into a new source directory only after checking existing data is empty (`--resume`).
+
 - Detect Ubuntu/Debian release codenames dynamically, including Ubuntu 26.04; require the exact release/architecture's official Docker package index before changing system packages.
 
 - Optional managed HTTPS gateway with automatic certificate renewal, occupied-port checks and persistent certificate storage.

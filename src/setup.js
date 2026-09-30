@@ -24,11 +24,28 @@ export async function runSetup({
       'An installation already exists here. Use Settings to change credentials or servers. Setup never overwrites an existing database.',
     );
   print('Relaydesk setup · independent login, encrypted panel credentials');
-  const origin = (
-    await ask('Public HTTPS origin (for example https://relay.example.com): ')
-  ).trim();
-  // Validate the origin before asking for secrets.
-  configFromEnv({ PUBLIC_ORIGIN: origin, PANELS_JSON: '[]' });
+  let origin;
+  // Empty or malformed input is recoverable, before collecting credentials or writing data.
+  for (;;) {
+    const answer = (
+      await ask(
+        'Panel address: domain or public IPv4 (for example relay.example.com or your server IP): ',
+      )
+    ).trim();
+    if (!answer) {
+      print('Enter a domain or IP address. This cannot be blank.');
+      continue;
+    }
+    origin = answer.includes('://') ? answer : `https://${answer}`;
+    try {
+      configFromEnv({ PUBLIC_ORIGIN: origin, PANELS_JSON: '[]' });
+      break;
+    } catch {
+      print(
+        'Enter a valid HTTPS address without a path, query or trailing slash. Domain or IP is accepted.',
+      );
+    }
+  }
   const username = loginName((await ask('Administrator username [admin]: ')).trim() || 'admin');
   const contact = email(
     (await ask('Administrator email [admin@relaydesk.local]: ')).trim() || 'admin@relaydesk.local',

@@ -40,7 +40,7 @@ case "$command_name" in
     "${compose[@]}" up -d --wait --wait-timeout 60
     printf '\nRelaydesk listens on 127.0.0.1:%s. Configure your HTTPS proxy to forward there.\n' "$relaydesk_port"
     echo 'Manage it with: bash install.sh status | logs | stop | start'
-    read -r -p 'Set up automatic HTTPS now? Requires a domain and free ports 80/443. [y/N]: ' setup_https
+    read -r -p 'Set up automatic HTTPS now? Domain or public IPv4; free ports 80/443 required. [y/N]: ' setup_https
     if [[ "$setup_https" == y || "$setup_https" == Y ]]; then
       bash https.sh enable || echo 'Application installed. HTTPS is not confirmed; fix the reported issue and run bash install.sh https enable.' >&2
     fi

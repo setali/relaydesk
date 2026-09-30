@@ -20,7 +20,7 @@ sudo bash relaydesk-bootstrap.sh
 
 The server must reach GitHub, Docker Hub and (only for optional Docker installation) Docker's apt repository and OS package mirrors. Failed downloads stop safely; do not disable TLS verification or use an untrusted mirror.
 
-Existing Docker is reused, never upgraded, restarted or reconfigured by the bootstrap. If it lacks Compose or is unhealthy, fix that yourself and rerun. If Docker is absent, Ubuntu and Debian on amd64/arm64 with the required packages in Docker’s official stable repository can opt in to adding Docker's official apt repository and installing Docker Engine, Compose, Buildx and containerd. This changes system packages and Docker networking/firewall rules, and starts the daemon. The prompt defaults to **No**. Existing/conflicting runtimes, runtime data, or a Docker apt repository require manual installation; nothing is uninstalled. No users are added to the docker group. Other Linux distributions require Docker preinstalled. Package changes are not automatically rolled back if a later step fails.
+Existing Docker is reused, never upgraded, restarted or reconfigured by the bootstrap. If it lacks Compose or is unhealthy, fix that yourself and rerun. If Docker is absent, Ubuntu and Debian on amd64/arm64 with the required packages in Docker’s official stable repository can opt in to adding Docker's official apt repository and installing Docker Engine, Compose, Buildx and containerd. This changes system packages and Docker networking/firewall rules, and starts the daemon. The initial installation confirmation covers these disclosed prerequisites; there is no second Docker confirmation. Existing/conflicting runtimes, runtime data, or a Docker apt repository require manual installation; nothing is uninstalled. No users are added to the docker group. Other Linux distributions require Docker preinstalled. Package changes are not automatically rolled back if a later step fails.
 
 The package-installation procedure follows the official [Ubuntu](https://docs.docker.com/engine/install/ubuntu/) and [Debian](https://docs.docker.com/engine/install/debian/) instructions. On shared hosts, review their firewall guidance before opting in. Relaydesk itself publishes HTTP on loopback only.
 
@@ -43,7 +43,7 @@ bash install.sh
 
 The local `install.sh` requires Bash, Docker Engine, Compose with `up --wait-timeout`, and permission to use Docker. It builds the downloaded source and runs the wizard; dependency installation belongs to `bootstrap.sh` only.
 
-The wizard asks for a local HTTP port, public HTTPS origin, independent Relaydesk username/email/password, and optionally the first 3x-ui connection. For that connection, supply the full panel URL, API token, optional subscription URL, and approved inbound IDs. Select Vision only when required by a VLESS inbound. Password and token input are hidden. Leaving the password blank generates one and displays it once.
+The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), independent Relaydesk username/email/password, and optionally the first 3x-ui connection. For that connection, supply the full panel URL, API token, optional subscription URL, and approved inbound IDs. Select Vision only when required by a VLESS inbound. Password and token input are hidden. Leaving the password blank generates one and displays it once.
 
 Failed panel verification stops before creating an installation. Existing databases are never overwritten. You can skip the panel and add it in Settings later. No hand-edited `.env` is required.
 
@@ -57,6 +57,16 @@ bash install.sh start
 ```
 
 If setup succeeded but startup failed, fix the conflict (such as a busy port) and run `start`. If setup was interrupted after creating its database, preserve the data and recover configuration rather than deleting the volume. Initial setup will refuse to erase it.
+
+## Interrupted first setup
+
+If initial setup exited before saving an account (for example after a blank address), do not delete the volume. Use:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash -s -- --resume
+```
+
+This keeps the old source directory and downloads the verified revision into `/opt/relaydesk-<revision>`. It refuses existing app containers and checks the existing data volume read-only: only an entirely empty volume can be reused. A populated or unreadable volume is never overwritten. This is not an upgrade or credential-reset command. On subsequent interruption, use the exact `install.sh` path printed by that run. Root users can omit `sudo`.
 
 ## HTTPS
 

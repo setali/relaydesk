@@ -5,6 +5,16 @@ import { managedDomain, inspectCertificate, certificateStatus } from '../src/htt
 
 test('managed HTTPS accepts only a DNS origin on standard HTTPS port', () => {
   assert.equal(managedDomain('https://relay.example.com'), 'relay.example.com');
+  assert.equal(managedDomain('https://8.8.8.8'), '8.8.8.8');
+  for (const ip of [
+    '10.1.2.3',
+    '192.168.1.1',
+    '100.64.1.1',
+    '169.254.1.1',
+    '203.0.113.1',
+    '224.0.0.1',
+  ])
+    assert.throws(() => managedDomain(`https://${ip}`));
   for (const value of [
     'http://relay.example.com',
     'https://127.0.0.1',

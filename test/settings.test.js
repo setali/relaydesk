@@ -258,7 +258,9 @@ test('guided setup writes no plaintext credentials, imports approved inbounds an
   const file = join(directory, 'runtime.json'),
     outputs = [];
   const answers = [
-    origin,
+    '',
+    'http://unsafe.example.com',
+    origin.replace('https://', ''),
     'operator',
     'operator@example.com',
     secret,
@@ -283,6 +285,7 @@ test('guided setup writes no plaintext credentials, imports approved inbounds an
   assert.equal(raw.includes(panel.token), false);
   assert.equal(outputs.join('\n').includes(secret), false);
   const config = configFromEnv({ RELAYDESK_CONFIG: file });
+  assert.equal(config.origin, origin);
   const db = openDatabase(config.database),
     store = new PanelStore(db, config);
   assert.equal(db.prepare('SELECT username FROM users').get().username, 'operator');

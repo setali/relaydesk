@@ -5,6 +5,7 @@ set -euo pipefail
 RELAYDESK_REVISION='e2f00b27533e87236703481c8fd2eacf043620bb'
 RELAYDESK_SHA256='f9606564e0c6d8541abac9c23851d3fd242dd0030a877f3c9bbaf0c167ba51f0'
 RELAYDESK_DIRECTORY='/opt/relaydesk'
+resume_install=false
 
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 download() {
@@ -23,7 +24,7 @@ verify_archive() {
 }
 check_destination() {
   [[ ! -e "$RELAYDESK_DIRECTORY" && ! -L "$RELAYDESK_DIRECTORY" ]] || \
-    die 'An installation path already exists at /opt/relaydesk. It was not modified. See docs/INSTALL.md for recovery or upgrades.'
+    die "An installation path already exists at $RELAYDESK_DIRECTORY. It was not modified. See docs/INSTALL.md for recovery or upgrades."
 }
 check_docker() {
   local existing
@@ -34,8 +35,14 @@ check_docker() {
   [[ -z "$existing" ]] || \
     die 'A relaydesk Compose project already exists. Refusing to take it over.'
   existing="$(docker volume ls -q --filter name='^relaydesk_relaydesk-data$')" || die 'Unable to inspect existing data volumes.'
-  [[ -z "$existing" ]] || \
-    die 'An existing Relaydesk data volume was found. Preserve it and follow the recovery guide.'
+  if [[ -n "$existing" ]]; then
+    [[ "$resume_install" == true ]] || die 'An existing Relaydesk data volume was found. Preserve it and follow the recovery guide.'
+    docker run --rm --read-only --network none --cap-drop=ALL --security-opt=no-new-privileges:true \
+      --mount type=volume,source=relaydesk_relaydesk-data,target=/check,readonly \
+      node:24.12.0-alpine@sha256:c921b97d4b74f51744057454b306b418cf693865e73b8100559189605f6955b8 \
+      node -e 'if(require("node:fs").readdirSync("/check").length) process.exit(1)' || \
+      die 'The existing data volume is not empty (or could not be checked). Nothing was replaced; use the recovery guide.'
+  fi
 }
 docker_repository() {
   local distro="$1" codename="$2" architecture="$3" package
@@ -48,6 +55,9 @@ docker_repository() {
   for package in docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; do
     grep -Fxq "Package: $package" "$workdir/docker-packages" || die "Docker's repository lacks $package for $distro/$codename/$architecture. No packages were changed."
   done
+}
+docker_notice() {
+  printf '\nMissing prerequisites: Docker Engine, Compose, Buildx and containerd.\nInstalling them adds Docker\047s official apt repository and starts Docker.\nDocker creates networking/firewall rules; review this on shared servers.\nExisting runtimes and user permissions will not be replaced.\n'
 }
 install_docker() {
   # Never remove conflicting runtimes or overwrite an existing package repository.
@@ -72,8 +82,10 @@ install_docker() {
   fi
   architecture="$(dpkg --print-architecture)"
   case "$architecture" in amd64|arm64) ;; *) die 'Automatic setup supports amd64 and arm64 only.' ;; esac
-  printf '\nDocker is not installed. Optional setup will add Docker\047s official apt repository,\ninstall Docker Engine, Compose, Buildx and containerd, and start Docker.\nDocker creates system networking/firewall rules. Review this on shared servers.\nNo existing packages will be removed, and no users will be added to the docker group.\n'
-  confirm 'Install these system packages now?' || die 'Docker installation declined. No system packages were changed.'
+  if [[ "${1:-}" != approved ]]; then
+    docker_notice
+    confirm 'Install these system packages now?' || die 'Docker installation declined. No system packages were changed.'
+  fi
   docker_repository "$ID" "$VERSION_CODENAME" "$architecture"
   apt-get update
   apt-get install -y --no-remove ca-certificates curl
@@ -95,14 +107,20 @@ require_terminal() {
 }
 main() {
   [[ "${1:-}" != --help ]] || { printf 'Relaydesk first-time installer: sudo bash bootstrap.sh\nInstalls reviewed source under /opt/relaydesk. Requires a terminal and HTTPS reverse proxy.\n'; return; }
-  [[ $# == 0 ]] || die 'Usage: sudo bash bootstrap.sh [--help]'
+  if [[ "${1:-}" == --resume ]]; then
+    resume_install=true
+    RELAYDESK_DIRECTORY="/opt/relaydesk-${RELAYDESK_REVISION:0:12}"
+    shift
+  fi
+  [[ $# == 0 ]] || die 'Usage: sudo bash bootstrap.sh [--help|--resume]'
   require_terminal
   for tool in curl tar gzip sha256sum mktemp install grep; do
     command -v "$tool" >/dev/null || die "Missing prerequisite: $tool"
   done
   check_destination
   printf '\nRelaydesk · guided installation\nSource: https://github.com/setali/relaydesk\nRevision: %s\nDirectory: %s\n\nThis installs the management workspace only. It does not configure 3x-ui,\nVPN routing, DNS or existing proxies. HTTP binds to loopback.\nThe wizard can set up a dedicated HTTPS gateway with your confirmation.\n' "$RELAYDESK_REVISION" "$RELAYDESK_DIRECTORY"
-  confirm 'Download and install Relaydesk?' || die 'Installation cancelled.'
+  if ! command -v docker >/dev/null 2>&1; then docker_notice; fi
+  confirm 'Install Relaydesk and any missing prerequisites described above?' || die 'Installation cancelled.'
   workdir="$(mktemp -d -t relaydesk-install.XXXXXXXX)"
   # Remove only the private, newly-created download directory. Never remove installation data.
   trap 'rm -rf -- "$workdir"' EXIT
@@ -111,7 +129,7 @@ main() {
   if command -v docker >/dev/null 2>&1; then
     check_docker
   else
-    install_docker
+    install_docker approved
     check_docker
   fi
   install -d -m 0700 "$workdir/source"
@@ -122,14 +140,14 @@ main() {
   mkdir -m 0755 "$RELAYDESK_DIRECTORY"
   cp -R "$workdir/source/." "$RELAYDESK_DIRECTORY/"
   chmod 0755 "$RELAYDESK_DIRECTORY"
-  printf '\nSource verified. Starting the setup wizard.\nIf interrupted, use: sudo bash /opt/relaydesk/install.sh\n'
+  printf '\nSource verified. Starting the setup wizard.\nIf interrupted, use: sudo bash %s/install.sh\n' "$RELAYDESK_DIRECTORY"
   bash "$RELAYDESK_DIRECTORY/install.sh"
   if [[ -f "$RELAYDESK_DIRECTORY/relaydesk" && ! -e /usr/local/bin/relaydesk && ! -L /usr/local/bin/relaydesk ]]; then
     install -d -m 0755 /usr/local/bin
     chmod 0755 "$RELAYDESK_DIRECTORY/relaydesk"
     ln -s "$RELAYDESK_DIRECTORY/relaydesk" /usr/local/bin/relaydesk
   fi
-  printf '\nManagement menu: sudo bash /opt/relaydesk/install.sh menu\nHTTPS setup/status: sudo bash /opt/relaydesk/install.sh https enable\nSee /opt/relaydesk/docs/HTTPS.md for DNS, certificate and shared-server guidance.\n'
+  printf '\nManagement menu: sudo bash %s/install.sh menu\nHTTPS setup: sudo bash %s/install.sh https enable\nSee %s/docs/HTTPS.md for certificate guidance.\n' "$RELAYDESK_DIRECTORY" "$RELAYDESK_DIRECTORY" "$RELAYDESK_DIRECTORY"
 }
 
 # Keep execution at the end so an incomplete streamed download cannot start installation.

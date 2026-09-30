@@ -26,13 +26,19 @@ case "$command_name" in
     [[ -z "$volumes" ]] || fail 'Gateway certificate storage already exists. Recover .https.env; certificates were not changed.'
     domain="$("${app[@]}" run --rm -T --no-deps relaydesk node src/https-cli.js domain)"
     [[ "$domain" =~ ^[a-z0-9.-]+$ ]] || fail 'Invalid configured domain.'
-    command -v getent >/dev/null || fail 'getent is required for DNS verification.'
-    getent ahosts "$domain" || fail 'Domain does not resolve. Set DNS first.'
-    printf '\nEnable HTTPS for https://%s using a dedicated Caddy container.\nAll A/AAAA records must point to this server; inbound TCP 80/443 must be reachable.\nThis exposes Relaydesk publicly and requests a certificate for the domain.\nNo firewall rules, existing proxy configuration or DNS records will be changed.\nCertificates renew automatically while this gateway stays running.\n' "$domain"
-    read -r -p 'DNS and firewall ready; enable this gateway? [y/N]: ' answer
+    caddyfile=Caddyfile
+    if [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      caddyfile=Caddyfile.ip
+      printf '\nPublic IPv4 mode: this IP must route directly to this server. Short-lived IP certificates require continuous automatic renewal.\n'
+    else
+      command -v getent >/dev/null || fail 'getent is required for DNS verification.'
+      getent ahosts "$domain" || fail 'Domain does not resolve. Set DNS first.'
+    fi
+    printf '\nEnable HTTPS for https://%s using a dedicated Caddy container.\nThe address must reach this server; inbound TCP 80/443 must be reachable.\nThis exposes Relaydesk publicly and requests a certificate for the address.\nNo firewall rules, existing proxy configuration or DNS records will be changed.\nCertificates renew automatically while this gateway stays running.\n' "$domain"
+    read -r -p 'Address and firewall ready; enable this gateway? [y/N]: ' answer
     [[ "$answer" == y || "$answer" == Y ]] || exit 0
     # Atomic no-clobber creation; retain config and certificate data on failures.
-    (set -o noclobber; umask 077; printf 'RELAYDESK_DOMAIN=%s\n' "$domain" > .https.env)
+    (set -o noclobber; umask 077; printf 'RELAYDESK_DOMAIN=%s\nRELAYDESK_CADDYFILE=%s\n' "$domain" "$caddyfile" > .https.env)
     "${gateway[@]}" run --rm --no-deps gateway caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
     "${gateway[@]}" up -d
     printf '\nGateway started; certificate issuance may still be pending.\nRun: bash install.sh https status (checks TLS trust and expiry).\nFor errors: bash install.sh https logs\n'

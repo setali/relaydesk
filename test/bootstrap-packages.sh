@@ -26,7 +26,9 @@ if (download() { return 22; }; install_docker); then echo 'Missing repository un
 [[ ! -e "$workdir/packages.log" ]]
 [[ ! -e /etc/apt/sources.list.d/relaydesk-docker.sources ]]
 
-install_docker
+# Consent was already obtained by the bootstrap.
+confirm() { return 1; }
+install_docker approved
 [[ "$(wc -l < "$workdir/packages.log")" == 4 ]]
 grep -q -- 'install -y --no-remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin' "$workdir/packages.log"
 grep -q 'https://download.docker.com/linux/debian' /etc/apt/sources.list.d/relaydesk-docker.sources

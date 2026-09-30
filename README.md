@@ -56,7 +56,7 @@ curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh 
 
 Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.3.0 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
 
-Existing Docker installations are left unchanged. If Docker is missing on Ubuntu or Debian (amd64/arm64), with the required packages available in Docker’s official stable repository for that release, the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. DNS must be configured first. The wizard offers automatic HTTPS on free ports 80/443; an existing reverse proxy is never modified. See [HTTPS setup](docs/HTTPS.md).
+Existing Docker installations are left unchanged. If Docker is missing on Ubuntu or Debian (amd64/arm64), with the required packages available in Docker’s official stable repository for that release, the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. Use a public IPv4 or configure DNS for your domain first. The wizard offers automatic HTTPS on free ports 80/443; an existing reverse proxy is never modified. See [HTTPS setup](docs/HTTPS.md).
 
 Alternatively, from a trusted source checkout with Docker and Compose already installed:
 
