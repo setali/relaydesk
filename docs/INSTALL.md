@@ -8,7 +8,7 @@ For a Linux server, run:
 curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash
 ```
 
-Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.3.1 application revision `5671548818bd5d3d22bbfc3089fc5dba56f4f6b6`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
+Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.3.1 application revision `5a2c32f53e0b238c02f59237b7ace81ac2c88b54`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
 
 **Trust boundary:** the entry script is fetched from this repository's `main` branch. Its pinned archive checksum detects changed or incomplete downloads; it is not an independent signature against a compromised repository. Review the script before running it with root privileges. To inspect it first:
 
