@@ -54,7 +54,7 @@ On a Linux server, run one command (no Git or manual clone needed):
 curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash
 ```
 
-Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.2.0 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
+Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.3.0 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
 
 Existing Docker installations are left unchanged. If Docker is missing on Ubuntu 22.04/24.04 or Debian 12/13 (amd64/arm64), the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. DNS must be configured first. The wizard offers automatic HTTPS on free ports 80/443; an existing reverse proxy is never modified. See [HTTPS setup](docs/HTTPS.md).
 
