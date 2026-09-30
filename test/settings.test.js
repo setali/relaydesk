@@ -12,6 +12,7 @@ import { PanelStore } from '../src/panel-store.js';
 import { DemoPanel, ThreeXUI } from '../src/panel.js';
 import { runSetup } from '../src/setup.js';
 import { configFromEnv } from '../src/config.js';
+import { verifyPassword } from '../src/security.js';
 const origin = 'https://relay.example.com',
   secret = 'a-private-test-password';
 test('discovery rejects malformed and duplicate inbound identifiers', async () => {
@@ -261,12 +262,7 @@ test('guided setup writes no plaintext credentials, imports approved inbounds an
     '',
     'http://unsafe.example.com',
     origin.replace('https://', ''),
-    'operator',
-    'operator@example.com',
-    secret,
-    secret,
     'y',
-    'primary',
     'Germany',
     panel.baseUrl,
     panel.token,
@@ -288,7 +284,23 @@ test('guided setup writes no plaintext credentials, imports approved inbounds an
   assert.equal(config.origin, origin);
   const db = openDatabase(config.database),
     store = new PanelStore(db, config);
-  assert.equal(db.prepare('SELECT username FROM users').get().username, 'operator');
+  assert.equal(db.prepare('SELECT username FROM users').get().username, 'admin');
+  const credentialLines = outputs.filter((line) =>
+    line.startsWith('Generated administrator password (shown once): '),
+  );
+  assert.equal(credentialLines.length, 1);
+  const generated = credentialLines[0].split(': ')[1];
+  assert.match(generated, /^[A-Za-z0-9_-]{43}$/);
+  assert.equal(raw.includes(generated), false);
+  assert.equal(
+    await verifyPassword(
+      generated,
+      db.prepare('SELECT password_hash FROM users').get().password_hash,
+    ),
+    true,
+  );
+  assert.equal(store.all()[0].id, 'primary');
+  assert.equal(store.all()[0].baseUrl, panel.baseUrl);
   assert.equal(store.all()[0].inbounds[0].flow, 'xtls-rprx-vision');
   db.close();
   await assert.rejects(
@@ -300,19 +312,7 @@ test('failed setup verification never creates an installation', async (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'relaydesk-failed-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const file = join(directory, 'runtime.json');
-  const answers = [
-    origin,
-    'operator',
-    'operator@example.com',
-    secret,
-    secret,
-    'y',
-    'primary',
-    'Germany',
-    panel.baseUrl,
-    panel.token,
-    '',
-  ];
+  const answers = [origin, 'y', 'Germany', panel.baseUrl, panel.token, ''];
   await assert.rejects(
     runSetup({
       runtimeFile: file,

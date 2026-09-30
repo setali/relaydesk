@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Create the initial admin account with a random password automatically, assign the first server ID internally, and clarify the API token location and full panel URL prompt.
+
 - Detect public IPv4 during setup and use it as the panel address when Enter is pressed; allow manual overrides and fall back to manual input if detection fails.
 
 - Combine application/prerequisite consent, retry blank or invalid panel addresses, and support public IPv4 HTTPS with short-lived ACME certificates.

@@ -24,7 +24,7 @@ No `npm install` is needed. There are no third-party runtime or development pack
 ## What works today
 
 - Administrator and member accounts, with server-enforced ownership checks.
-- Guided installer with an independent administrator username and optional generated password.
+- Guided installer that creates an independent `admin` account with a secure random password.
 - Account settings for changing your username/password; all old sessions are revoked.
 - Admin server management: discover inbounds, test connections, rotate tokens, and remove unused servers.
 - AES-256-GCM encryption for saved panel tokens, with a separate local master key.
@@ -64,7 +64,7 @@ Alternatively, from a trusted source checkout with Docker and Compose already in
 bash install.sh
 ```
 
-The wizard asks for a public HTTPS origin, an independent administrator login, and optionally a 3x-ui URL and token. It verifies read access, lists supported inbounds, and lets you approve them. Password/token entry is hidden. Leaving the administrator password blank generates one and displays it once.
+The wizard asks for a public HTTPS origin and optionally a 3x-ui URL and token. It automatically creates the independent `admin` account and displays its random password once after setup succeeds. Save it securely; change your username/password in Settings later. The first server's internal ID is assigned automatically. The wizard verifies read access, lists supported inbounds, and lets you approve them. Token entry is hidden. Supply the full 3x-ui HTTPS URL, including any custom port and private base path.
 
 The installer builds this checkout, stores data in a named Docker volume, starts an unprivileged container, and binds HTTP only to loopback. Choose managed HTTPS after setup, or configure your existing HTTPS reverse proxy to forward to the selected local port. It does not change your firewall or existing services. You need no hand-edited `.env` for this path.
 
@@ -75,7 +75,7 @@ npm run setup
 npm run start:configured
 ```
 
-Open **Settings** to change your account or add/edit servers. For token-capable Sanaei releases, create a dedicated token under **Panel Settings → API Tokens**. Tokens are not Sanaei account passwords. Missing token support or incompatible APIs must be resolved before connecting; a read probe does not guarantee write compatibility.
+Open **Settings** to change your account or add/edit servers. For token-capable Sanaei releases, create a dedicated token under **Panel Settings → Authentication → API Token** (location may vary by release). Tokens are not Sanaei account passwords. Missing token support or incompatible APIs must be resolved before connecting; a read probe does not guarantee write compatibility.
 
 See [installation and upgrades](docs/INSTALL.md) for lifecycle commands, backup, and HTTPS setup.
 

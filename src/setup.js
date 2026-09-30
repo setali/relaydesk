@@ -5,7 +5,7 @@ import { resolve, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createApp } from './app.js';
 import { configFromEnv } from './config.js';
-import { loginName, email, password, token } from './security.js';
+import { token } from './security.js';
 import { ThreeXUI } from './panel.js';
 import { validatePanel } from './panel-store.js';
 import { detectPublicIPv4, publicIPv4 } from './public-ip.js';
@@ -60,25 +60,24 @@ export async function runSetup({
       );
     }
   }
-  const username = loginName((await ask('Administrator username [admin]: ')).trim() || 'admin');
-  const contact = email(
-    (await ask('Administrator email [admin@relaydesk.local]: ')).trim() || 'admin@relaydesk.local',
-  );
-  const entered = await ask('Administrator password (12+ characters; blank generates one): ', true);
-  const secret = entered ? password(entered) : token();
-  if (entered && secret !== (await ask('Confirm administrator password: ', true)))
-    throw new Error('Passwords do not match. No installation was created.');
+  const username = 'admin';
+  const contact = 'admin@relaydesk.local';
+  const secret = token();
   const panels = [];
   if ((await ask('Connect a 3x-ui server now? [y/N]: ')).trim().toLowerCase() === 'y') {
     print(
-      'In token-capable 3x-ui releases: Panel Settings → API Tokens → create a token for Relaydesk.',
+      'In token-capable 3x-ui releases: Panel Settings → Authentication → API Token. Create a dedicated token for Relaydesk; location may vary by release.',
     );
     print(
       'Use the full HTTPS panel URL including its private base path. Cookie-only and v3-only APIs are not supported in this release.',
     );
-    const id = (await ask('Server ID [primary]: ')).trim() || 'primary';
+    const id = 'primary';
     const name = (await ask('Server display name [Primary server]: ')).trim() || 'Primary server';
-    const baseUrl = (await ask('Full panel HTTPS URL: ')).trim();
+    const baseUrl = (
+      await ask(
+        'Full 3x-ui HTTPS URL including port and private path (example: https://panel.example.com:2053/your-path/): ',
+      )
+    ).trim();
     const apiToken = await ask('Panel API token (hidden): ', true);
     const subscriptionBaseUrl = (await ask('Subscription HTTPS base URL (optional): ')).trim();
     const panel = validatePanel({
@@ -142,7 +141,7 @@ export async function runSetup({
   writeFileSync(pending, JSON.stringify(runtime, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
   renameSync(pending, file);
   print(`Setup complete. Username: ${username}`);
-  if (!entered) print(`Generated administrator password (shown once): ${secret}`);
+  print(`Generated administrator password (shown once): ${secret}`);
   print(
     `URL: ${origin}\nPut an HTTPS reverse proxy in front of the local port. Change credentials and manage servers under Settings.`,
   );

@@ -43,7 +43,11 @@ bash install.sh
 
 The local `install.sh` requires Bash, Docker Engine, Compose with `up --wait-timeout`, and permission to use Docker. It builds the downloaded source and runs the wizard; dependency installation belongs to `bootstrap.sh` only.
 
-The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), independent Relaydesk username/email/password, and optionally the first 3x-ui connection. It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server. For that connection, supply the full panel URL, API token, optional subscription URL, and approved inbound IDs. Select Vision only when required by a VLESS inbound. Password and token input are hidden. Leaving the password blank generates one and displays it once.
+The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), and optionally the first 3x-ui connection. It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server.
+
+Setup automatically creates the independent `admin` account with a cryptographically random password, displayed once after successful setup. Save it securely. The initial contact is `admin@relaydesk.local`; no mailbox is required. You can change your username/password in Settings. Existing accounts are never reset by setup.
+
+For the optional 3x-ui connection, supply a display name, full HTTPS panel URL (including any custom port and private path, for example `https://panel.example.com:2053/your-path/`), API token, optional subscription URL, and approved inbound IDs. Its internal server ID is assigned automatically; it is not a value from 3x-ui. Select Vision only when required by a VLESS inbound. Token input is hidden.
 
 Failed panel verification stops before creating an installation. Existing databases are never overwritten. You can skip the panel and add it in Settings later. No hand-edited `.env` is required.
 
@@ -84,7 +88,7 @@ Replace the hostname and port. Add this to your existing proxy configuration as 
 
 ## Getting a token
 
-In token-capable Sanaei releases, open **Panel Settings → API Tokens** and create a dedicated credential. A login password is not an API token. UI placement varies by release; consult the [official 3x-ui project](https://github.com/MHSanaei/3x-ui).
+In token-capable Sanaei releases, open **Panel Settings → Authentication → API Token** and create a dedicated credential. A login password is not an API token. UI placement varies by release; consult the [official 3x-ui project](https://github.com/MHSanaei/3x-ui).
 
 This release requires bearer authentication on v2 inbound-scoped routes. Cookie-only or v3-only APIs need another adapter. The installer probes read access and response shape, not all write endpoints. Test creation, consumption sync and removal on a disposable client before production. Relaydesk never upgrades 3x-ui automatically.
 

@@ -45,7 +45,7 @@ test('Enter selects detected IPv4; manual address overrides; detection failure r
     const dir = mkdtempSync(join(tmpdir(), 'relaydesk-default-ip-'));
     t.after(() => rmSync(dir, { recursive: true, force: true }));
     const prompts = [],
-      answers = [...input, 'operator', '', '', 'n'];
+      answers = [...input, 'n'];
     const file = join(dir, 'runtime.json');
     await runSetup({
       runtimeFile: file,
