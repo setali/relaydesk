@@ -29,8 +29,7 @@ case "$command_name" in
       exit 1
     fi
     [[ -t 0 ]] || { echo 'Run bash install.sh in an interactive terminal.' >&2; exit 1; }
-    read -r -p 'Local HTTP port behind your HTTPS proxy [3210]: ' relaydesk_port
-    relaydesk_port="${relaydesk_port:-3210}"
+    relaydesk_port="${RELAYDESK_HTTP_PORT:-3210}"
     if [[ ! "$relaydesk_port" =~ ^[1-9][0-9]{0,4}$ ]] || ((relaydesk_port > 65535)); then echo 'Invalid port.' >&2; exit 1; fi
     "${compose[@]}" build
     # No host port is published by this one-shot wizard. The volume holds its DB and key.
@@ -40,10 +39,7 @@ case "$command_name" in
     "${compose[@]}" up -d --wait --wait-timeout 60
     printf '\nRelaydesk listens on 127.0.0.1:%s. Configure your HTTPS proxy to forward there.\n' "$relaydesk_port"
     echo 'Manage it with: bash install.sh status | logs | stop | start'
-    read -r -p 'Set up automatic HTTPS now? Domain or public IPv4; free ports 80/443 required. [y/N]: ' setup_https
-    if [[ "$setup_https" == y || "$setup_https" == Y ]]; then
-      bash https.sh enable || echo 'Application installed. HTTPS is not confirmed; fix the reported issue and run bash install.sh https enable.' >&2
-    fi
+    bash https.sh enable || echo 'Application installed. HTTPS is not confirmed; fix the reported issue and run bash install.sh https enable.' >&2
     ;;
   start)
     "${compose[@]}" up -d --wait --wait-timeout 60

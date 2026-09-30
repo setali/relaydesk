@@ -35,7 +35,8 @@ case "$command_name" in
       getent ahosts "$domain" || fail 'Domain does not resolve. Set DNS first.'
     fi
     printf '\nEnable HTTPS for https://%s using a dedicated Caddy container.\nThe address must reach this server; inbound TCP 80/443 must be reachable.\nThis exposes Relaydesk publicly and requests a certificate for the address.\nNo firewall rules, existing proxy configuration or DNS records will be changed.\nCertificates renew automatically while this gateway stays running.\n' "$domain"
-    read -r -p 'Address and firewall ready; enable this gateway? [y/N]: ' answer
+    read -r -p 'Address and firewall ready; enable this gateway? [Y/n]: ' answer || return 1
+    answer="${answer:-y}"
     [[ "$answer" == y || "$answer" == Y ]] || exit 0
     # Atomic no-clobber creation; retain config and certificate data on failures.
     (set -o noclobber; umask 077; printf 'RELAYDESK_DOMAIN=%s\nRELAYDESK_CADDYFILE=%s\n' "$domain" "$caddyfile" > .https.env)

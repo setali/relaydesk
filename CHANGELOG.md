@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Reduce installation to one initial confirmation, the panel address, and one HTTPS confirmation; normal install/HTTPS prompts default to yes while EOF cancels safely.
+- Use local HTTP port 3210 without prompting; allow an explicit `RELAYDESK_HTTP_PORT` override. Upgrade and stop confirmations remain default-no.
+
 ## 0.4.0
 
 - Move all 3x-ui connection configuration to Settings, with first-server onboarding and automatic internal IDs.

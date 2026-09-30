@@ -15,6 +15,23 @@ import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
 const bootstrap = resolve('bootstrap.sh');
+test('install confirmation accepts its explicit default but cancellation, invalid input and EOF fail closed', () => {
+  for (const [input, defaultAnswer, expected] of [
+    ['\n', 'y', 0],
+    ['n\n', 'y', 1],
+    ['invalid\n', 'y', 1],
+    ['', 'y', 1],
+    ['\n', 'n', 1],
+    ['Y\n', 'n', 0],
+  ]) {
+    const result = spawnSync('bash', ['-c', 'source "$BOOTSTRAP"; confirm Install "$DEFAULT"'], {
+      input,
+      encoding: 'utf8',
+      env: { ...process.env, BOOTSTRAP: bootstrap, DEFAULT: defaultAnswer },
+    });
+    assert.equal(result.status, expected);
+  }
+});
 function shell(code, env = {}) {
   return spawnSync('bash', ['-c', 'source "$BOOTSTRAP"\n' + code], {
     encoding: 'utf8',

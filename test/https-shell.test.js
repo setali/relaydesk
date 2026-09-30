@@ -35,7 +35,7 @@ ${extra}
 https_main enable
 `;
   const result = spawnSync('bash', ['-c', script], {
-    input: mode === 'decline' ? 'n\n' : 'y\n',
+    input: mode === 'decline' ? 'n\n' : mode === 'default' ? '\n' : mode === 'eof' ? '' : 'y\n',
     encoding: 'utf8',
     env: { ...process.env, FIXTURE: directory, MODE: mode },
     timeout: 5000,
@@ -63,6 +63,12 @@ test('HTTPS setup refuses host/Docker port conflicts, existing gateway and missi
   }
 });
 test('HTTPS setup requires consent, then validates before starting dedicated gateway', (t) => {
+  const empty = run(t, 'eof');
+  assert.notEqual(empty.result.status, 0);
+  assert.equal(existsSync(join(empty.directory, '.https.env')), false);
+  const accepted = run(t, 'default');
+  assert.equal(accepted.result.status, 0);
+  assert.equal(existsSync(join(accepted.directory, '.https.env')), true);
   const decline = run(t, 'decline');
   assert.equal(decline.result.status, 0);
   assert.equal(existsSync(join(decline.directory, '.https.env')), false);

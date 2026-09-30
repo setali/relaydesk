@@ -43,7 +43,9 @@ bash install.sh
 
 The local `install.sh` requires Bash, Docker Engine, Compose with `up --wait-timeout`, and permission to use Docker. It builds the downloaded source and runs the wizard; dependency installation belongs to `bootstrap.sh` only.
 
-The wizard asks only for a local HTTP port and Relaydesk domain/public IPv4 (HTTPS is added automatically). It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server.
+The normal flow has three prompts: confirm installation, choose Relaydesk's address, and confirm HTTPS. Installation and HTTPS default to yes; type `n` to decline. Ending input cancels rather than accepting. Stop/upgrade confirmations remain default-no. The local HTTP port is 3210 without a question; advanced installations may set `RELAYDESK_HTTP_PORT` in the installer's environment before setup.
+
+The address prompt checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the default: press Enter to accept it or enter a different IP/domain. HTTPS is added automatically. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server.
 
 Setup automatically creates the independent `admin` account with a cryptographically random password, displayed once after successful setup. Save it securely. The initial contact is `admin@relaydesk.local`; no mailbox is required. You can change your username/password in Settings. Existing accounts are never reset by setup.
 

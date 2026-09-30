@@ -13,8 +13,10 @@ download() {
     --tlsv1.2 --connect-timeout 20 --max-time 300 --retry 2 "$1" -o "$2"
 }
 confirm() {
-  local answer
-  read -r -p "$1 [y/N]: " answer
+  local answer default_answer="${2:-n}" prompt='[y/N]'
+  [[ "$default_answer" != y ]] || prompt='[Y/n]'
+  read -r -p "$1 $prompt: " answer || return 1
+  answer="${answer:-$default_answer}"
   [[ "$answer" == y || "$answer" == Y ]]
 }
 verify_archive() {
@@ -120,7 +122,7 @@ main() {
   check_destination
   printf '\nRelaydesk · guided installation\nSource: https://github.com/setali/relaydesk\nRevision: %s\nDirectory: %s\n\nThis installs the management workspace only. It does not configure 3x-ui,\nVPN routing, DNS or existing proxies. HTTP binds to loopback.\nThe wizard can set up a dedicated HTTPS gateway with your confirmation.\n' "$RELAYDESK_REVISION" "$RELAYDESK_DIRECTORY"
   if ! command -v docker >/dev/null 2>&1; then docker_notice; fi
-  confirm 'Install Relaydesk and any missing prerequisites described above?' || die 'Installation cancelled.'
+  confirm 'Install Relaydesk and any missing prerequisites described above?' y || die 'Installation cancelled.'
   workdir="$(mktemp -d -t relaydesk-install.XXXXXXXX)"
   # Remove only the private, newly-created download directory. Never remove installation data.
   trap 'rm -rf -- "$workdir"' EXIT
