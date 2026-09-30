@@ -227,11 +227,11 @@ test('v1 migration preserves accounts and rejects newer database versions', (t) 
   old.close();
   const migrated = openDatabase(path);
   assert.equal(migrated.prepare('SELECT username FROM users').get().username, 'owner@example.com');
-  assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 3);
   migrated.close();
   const again = openDatabase(path);
   assert.equal(again.prepare('SELECT count(*) AS n FROM users').get().n, 1);
-  again.exec('PRAGMA user_version=3');
+  again.exec('PRAGMA user_version=4');
   again.close();
   assert.throws(() => openDatabase(path), /newer/);
 });
@@ -253,43 +253,35 @@ test('encrypted panel persistence survives restart; import is one-time; missing 
   assert.throws(() => new PanelStore(reopened, { database }), /key is missing/);
   reopened.close();
 });
-test('guided setup writes no plaintext credentials, imports approved inbounds and refuses reinstall', async (t) => {
+test('setup creates only the admin account, shows credentials and refuses reinstall', async (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'relaydesk-setup-test-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const file = join(directory, 'runtime.json'),
-    outputs = [];
-  const answers = [
-    '',
-    'http://unsafe.example.com',
-    origin.replace('https://', ''),
-    'y',
-    'Germany',
-    panel.baseUrl,
-    panel.token,
-    '',
-    '1',
-    'y',
-  ];
+    outputs = [],
+    prompts = [];
+  const answers = ['', 'http://unsafe.example.com', origin.replace('https://', '')];
   await runSetup({
     runtimeFile: file,
-    ask: async () => answers.shift(),
+    ask: async (question) => {
+      prompts.push(question);
+      assert.ok(answers.length);
+      return answers.shift();
+    },
     print: (s) => outputs.push(s),
-    discover: async () => [{ id: 1, name: 'Direct', protocol: 'vless' }],
   });
-  const raw = readFileSync(file, 'utf8');
-  assert.equal(raw.includes(secret), false);
-  assert.equal(raw.includes(panel.token), false);
-  assert.equal(outputs.join('\n').includes(secret), false);
-  const config = configFromEnv({ RELAYDESK_CONFIG: file });
+  assert.equal(prompts.length, 3);
+  assert.ok(prompts.every((p) => p.startsWith('Panel address:')));
+  const raw = readFileSync(file, 'utf8'),
+    config = configFromEnv({ RELAYDESK_CONFIG: file });
   assert.equal(config.origin, origin);
   const db = openDatabase(config.database),
     store = new PanelStore(db, config);
   assert.equal(db.prepare('SELECT username FROM users').get().username, 'admin');
-  const credentialLines = outputs.filter((line) =>
+  const credentials = outputs.filter((line) =>
     line.startsWith('Generated administrator password (shown once): '),
   );
-  assert.equal(credentialLines.length, 1);
-  const generated = credentialLines[0].split(': ')[1];
+  assert.equal(credentials.length, 1);
+  const generated = credentials[0].split(': ')[1];
   assert.match(generated, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(raw.includes(generated), false);
   assert.equal(
@@ -299,31 +291,16 @@ test('guided setup writes no plaintext credentials, imports approved inbounds an
     ),
     true,
   );
-  assert.equal(store.all()[0].id, 'primary');
-  assert.equal(store.all()[0].baseUrl, panel.baseUrl);
-  assert.equal(store.all()[0].inbounds[0].flow, 'xtls-rprx-vision');
+  assert.deepEqual(store.all(), []);
   db.close();
-  await assert.rejects(
-    runSetup({ runtimeFile: file, ask: async () => '', print: () => {} }),
-    /already exists/,
-  );
-});
-test('failed setup verification never creates an installation', async (t) => {
-  const directory = mkdtempSync(join(tmpdir(), 'relaydesk-failed-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const file = join(directory, 'runtime.json');
-  const answers = [origin, 'y', 'Germany', panel.baseUrl, panel.token, ''];
   await assert.rejects(
     runSetup({
       runtimeFile: file,
-      ask: async () => answers.shift(),
-      print: () => {},
-      discover: async () => {
-        throw new Error('offline');
+      ask: async () => {
+        throw new Error('unexpected prompt');
       },
+      print: () => {},
     }),
-    /verification failed/,
+    /already exists/,
   );
-  assert.throws(() => readFileSync(file), /ENOENT/);
-  assert.throws(() => readFileSync(join(directory, 'relaydesk.sqlite')), /ENOENT/);
 });

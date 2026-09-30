@@ -5,7 +5,7 @@ import { runSetup } from './src/setup.js';
 import { configFromEnv } from './src/config.js';
 import { createApp } from './src/app.js';
 let secret;
-const answers = ['https://relay.example.com', 'n'];
+const answers = ['https://relay.example.com'];
 await runSetup({
   runtimeFile: '/tmp/relaydesk/runtime.json',
   ask: async () => answers.shift(),

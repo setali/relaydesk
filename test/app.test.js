@@ -50,7 +50,7 @@ async function fixture(t, adapter = new DemoPanel()) {
     const result = await request('/resellers', {
       method: 'POST',
       session: admin,
-      body: { name: email, email, password, maxClients, quotaGB },
+      body: { name: email, email, password, maxClients, quotaGB, panelIds: ['demo'] },
     });
     assert.equal(result.status, 201);
     return login(email);

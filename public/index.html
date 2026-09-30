@@ -104,6 +104,14 @@
               ><button id="new-client" class="primary">＋ New client</button>
             </div>
           </div>
+          <section id="server-onboarding" class="table-card settings-card" hidden>
+            <h2>Connect your first server</h2>
+            <p>
+              Setup is complete. Add your 3x-ui panels here, then choose which servers each team
+              member can use.
+            </p>
+            <button id="connect-first-server" class="primary" type="button">Connect server</button>
+          </section>
           <section id="overview-panel">
             <div class="stats">
               <article class="stat">
@@ -280,11 +288,11 @@
                 <details class="token-help">
                   <summary>Where do I get an API token?</summary>
                   <p>
-                    In token-capable 3x-ui releases, open Panel Settings → API Tokens and create a
-                    dedicated token for Relaydesk. Copy it once into this form. If that section is
-                    missing, check your release: this adapter requires bearer authentication and the
-                    v2 inbound API. A successful probe checks read access; test a disposable client
-                    before relying on write compatibility.
+                    In token-capable 3x-ui releases, open Panel Settings → Authentication → API
+                    Token and create a dedicated token for Relaydesk. Copy it once into this form.
+                    If that section is missing, check your release: this adapter requires bearer
+                    authentication and the v2 inbound API. A successful probe checks read access;
+                    test a disposable client before relying on write compatibility.
                   </p>
                   <a
                     href="https://github.com/MHSanaei/3x-ui"
@@ -298,7 +306,7 @@
           </section>
           <footer class="page-footer">
             <span>relaydesk <span class="muted">/ thoughtfully connected</span></span
-            ><span>Self-hosted · v0.3.1</span>
+            ><span>Self-hosted · v0.4.0</span>
           </footer>
         </main>
       </div>
@@ -313,22 +321,17 @@
           <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
         </div>
         <div class="form-grid">
+          <input name="id" type="hidden" />
           <label
-            >Server ID<input
-              name="id"
-              required
-              pattern="[a-z0-9-]{1,40}"
-              placeholder="germany" /></label
-          ><label
             >Display name<input name="name" required maxlength="80" placeholder="Germany"
           /></label>
         </div>
         <label
-          >Full HTTPS panel URL<input
+          >Full HTTPS panel URL, including port and private path<input
             name="baseUrl"
             type="url"
             required
-            placeholder="https://panel.example.com/private-path"
+            placeholder="https://panel.example.com:2053/private-path/"
         /></label>
         <label
           >API token<input
@@ -339,8 +342,8 @@
             placeholder="Paste token; leave blank to keep an existing token"
         /></label>
         <p class="form-note">
-          In compatible Sanaei releases: Panel Settings → API Tokens. The panel login password is
-          not an API token.
+          In compatible Sanaei releases: Panel Settings → Authentication → API Token (location may
+          vary by release). The panel login password is not an API token.
         </p>
         <label
           >Subscription HTTPS base URL (optional)<input
@@ -452,11 +455,38 @@
           /></label>
         </div>
         <p class="form-note">
-          The team member can manage their own clients on the approved templates. Share credentials
-          privately.
+          The team member can manage their own clients only on the selected servers. Share
+          credentials privately.
         </p>
         <p class="error" role="alert"></p>
+        <fieldset>
+          <legend>Allowed servers</legend>
+          <div id="member-server-options"></div>
+        </fieldset>
+        <p class="form-note">
+          No selection means no server access. New servers are not granted automatically.
+        </p>
         <button class="primary" type="submit">Create workspace ↗</button>
+      </form>
+    </dialog>
+    <dialog id="access-dialog">
+      <form id="access-form">
+        <div class="dialog-heading">
+          <h2>Member server access</h2>
+          <button type="button" class="close icon-button" aria-label="Close dialog">×</button>
+        </div>
+        <p id="access-member-name"></p>
+        <fieldset>
+          <legend>Allowed servers</legend>
+          <div id="edit-server-options"></div>
+        </fieldset>
+        <p class="form-note">
+          Removing access hides these clients from the member and blocks management. Existing VPN
+          connections remain active and keep their allocation; an administrator can remove them
+          separately.
+        </p>
+        <p class="error" role="alert"></p>
+        <button class="primary" type="submit">Save access</button>
       </form>
     </dialog>
     <dialog id="delete-dialog">

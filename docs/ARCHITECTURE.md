@@ -4,13 +4,13 @@
 
 The initial deployment target is a small VPS. Node.js supplies HTTP, crypto, fetch, testing, and SQLite; browser modules supply the interface. This avoids a framework toolchain and extra network services while leaving the panel adapter independent. The intended topology is one Relaydesk process per database. Horizontal replication is not supported.
 
-The built-in SQLite API is synchronous. The database performs short indexed queries; remote HTTP requests and scrypt hashing are asynchronous. WAL mode and a busy timeout support backups and inspection. Schema v2 migrates v1 transactionally using `PRAGMA user_version`, adds usernames and encrypted panel storage, and refuses databases from newer versions.
+The built-in SQLite API is synchronous. The database performs short indexed queries; remote HTTP requests and scrypt hashing are asynchronous. WAL mode and a busy timeout support backups and inspection. Schema migrations use `PRAGMA user_version`: v2 adds usernames and encrypted panel storage; v3 adds `user_panels` grants. Existing members receive current configured server grants once, after legacy panel import. A metadata marker prevents regranting on restart. Newer schemas are refused. Run one application version against a database; rollback requires the matching pre-upgrade snapshot.
 
 ## Trust and ownership
 
 The browser is untrusted. Member ownership is derived from the authenticated session, never from a submitted owner ID. Admins can assign clients to any account. Queries and mutation lookups independently enforce ownership. The browser receives neither panel tokens nor password hashes.
 
-Panel credentials and base URLs come from administrators, never from member input. Server management validates HTTPS, probes the inbound API, and persists tokens using AES-256-GCM. API responses never return stored tokens or password hashes. All configured templates are available to all members; per-account template grants are future work.
+Panel credentials and base URLs come from administrators through Settings, never from member input or the terminal wizard. Server management validates HTTPS, probes the inbound API, and persists tokens using AES-256-GCM. API responses never return stored tokens or password hashes. Members need explicit server grants in addition to client ownership; all approved inbounds on each assigned server are available. Template discovery, reads, creation, replay, deletion and sync enforce grants. Admins see all servers, but creating for a member also checks that member's grant. Access changes are atomic and blocked while the member has in-flight operations. Revocation hides clients without modifying upstream connections or releasing allocation. Per-inbound grants remain future work.
 
 The interface escapes dynamic text before creating HTML. A same-origin content security policy disallows inline scripts and framing. No third-party fonts, analytics, or assets are fetched.
 

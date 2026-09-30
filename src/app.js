@@ -6,6 +6,7 @@ import { openDatabase, audit } from './db.js';
 import { ThreeXUI, DemoPanel } from './panel.js';
 import { PanelStore } from './panel-store.js';
 import { settingsRoutes } from './settings.js';
+import { panelAccess } from './access.js';
 import { certificateStatus } from './https-status.js';
 import {
   assert,
@@ -84,6 +85,7 @@ export async function createApp(config, overrides = {}) {
     store.importLegacy(config.panels);
     config.panels = store.all();
   }
+  const access = panelAccess(db, config);
   const adapters = new Map(
     config.panels.map((panel) => [
       panel.id,
@@ -137,13 +139,21 @@ export async function createApp(config, overrides = {}) {
   }
   const findClient = (id, user) => {
     const row = db.prepare("SELECT * FROM clients WHERE id=? AND status!='deleted'").get(id);
-    assert(row && (user.role === 'admin' || row.owner_id === user.id), 404, 'Client not found.');
+    assert(
+      row &&
+        (user.role === 'admin' || row.owner_id === user.id) &&
+        access.allowed(user, row.panel_id),
+      404,
+      'Client not found.',
+    );
     return row;
   };
-  function templates() {
-    return config.panels.flatMap((p) =>
-      p.inbounds.map((i) => ({ panelId: p.id, inboundId: i.id, name: i.name, server: p.name })),
-    );
+  function templates(user) {
+    return config.panels
+      .filter((p) => access.allowed(user, p.id))
+      .flatMap((p) =>
+        p.inbounds.map((i) => ({ panelId: p.id, inboundId: i.id, name: i.name, server: p.name })),
+      );
   }
   function viewClient(row) {
     const panel = config.panels.find((p) => p.id === row.panel_id);
@@ -286,7 +296,44 @@ export async function createApp(config, overrides = {}) {
                   'SELECT a.*, u.name AS actor FROM audit a JOIN users u ON a.actor_id=u.id WHERE actor_id=? ORDER BY a.id DESC LIMIT 30',
                 )
                 .all(user.id);
-        send({ clients: clients.map(viewClient), users, templates: templates(), events });
+        send({
+          clients: clients.filter((c) => access.allowed(user, c.panel_id)).map(viewClient),
+          users: users.map((u) => ({ ...u, panelIds: access.ids(u) })),
+          panels: config.panels
+            .filter((p) => access.allowed(user, p.id))
+            .map((p) => ({ id: p.id, name: p.name })),
+          templates: templates(user),
+          events,
+        });
+        return;
+      }
+      const accessMatch = path.match(/^\/api\/members\/([0-9a-f-]{36})\/servers$/);
+      if (accessMatch && req.method === 'PATCH') {
+        assert(user.role === 'admin', 403, 'Only administrators can assign servers.');
+        const member = db
+          .prepare("SELECT * FROM users WHERE id=? AND role='reseller'")
+          .get(accessMatch[1]);
+        assert(member, 404, 'Member not found.');
+        const body = await jsonBody(req);
+        const panelIds = access.validate(body.panelIds);
+        const rows = db
+          .prepare("SELECT id FROM clients WHERE owner_id=? AND status!='deleted'")
+          .all(member.id);
+        assert(
+          !busy.has(`sync:${member.id}`) && !rows.some((c) => busy.has(c.id)),
+          409,
+          'Wait for member operations to finish before changing access.',
+        );
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          access.replace(member.id, panelIds);
+          audit(db, user.id, 'member.servers_updated', member.id);
+          db.exec('COMMIT');
+        } catch (error) {
+          db.exec('ROLLBACK');
+          throw error;
+        }
+        send({ ok: true, panelIds });
         return;
       }
       if (path === '/api/resellers' && req.method === 'POST') {
@@ -297,16 +344,25 @@ export async function createApp(config, overrides = {}) {
         const max = integer(body.maxClients, 1, 10000, 'Client limit'),
           quota = integer(body.quotaGB, 1, 1000000, 'Allocated quota');
         const hash = await hashPassword(password(body.password));
+        const panelIds = access.validate(body.panelIds ?? []);
         assert(
           !db.prepare('SELECT id FROM users WHERE email=? OR username=?').get(login, login),
           409,
           'This email already has an account.',
         );
         const id = randomUUID();
-        db.prepare(
-          'INSERT INTO users(id,email,name,password_hash,role,max_clients,quota_gb,created_at,username) VALUES(?,?,?,?,?,?,?,?,?)',
-        ).run(id, login, name, hash, 'reseller', max, quota, Date.now(), login);
-        audit(db, user.id, 'reseller.created', id);
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          db.prepare(
+            'INSERT INTO users(id,email,name,password_hash,role,max_clients,quota_gb,created_at,username) VALUES(?,?,?,?,?,?,?,?,?)',
+          ).run(id, login, name, hash, 'reseller', max, quota, Date.now(), login);
+          access.replace(id, panelIds);
+          audit(db, user.id, 'reseller.created', id);
+          db.exec('COMMIT');
+        } catch (error) {
+          db.exec('ROLLBACK');
+          throw error;
+        }
         send({ id }, 201);
         return;
       }
@@ -320,6 +376,7 @@ export async function createApp(config, overrides = {}) {
         const ownerId = user.role === 'admin' ? body.ownerId || user.id : user.id;
         const previous = db.prepare('SELECT * FROM clients WHERE id=?').get(body.requestId);
         if (previous) {
+          assert(access.allowed(user, previous.panel_id), 403, 'Server access is not allowed.');
           assert(
             previous.owner_id === ownerId &&
               (user.role === 'admin' || previous.owner_id === user.id),
@@ -331,11 +388,16 @@ export async function createApp(config, overrides = {}) {
         }
         const owner = db.prepare('SELECT * FROM users WHERE id=?').get(ownerId);
         assert(owner, 400, 'Unknown account.');
+        assert(
+          access.allowed(user, body.panelId) && access.allowed(owner, body.panelId),
+          403,
+          'This account does not have access to that server.',
+        );
         const name = text(body.name, 'Client name'),
           quota = integer(body.quotaGB, 1, 1000000, 'Quota'),
           days = integer(body.days, 1, 365, 'Duration');
         assert(
-          templates().some((t) => t.panelId === body.panelId && t.inboundId === body.inboundId),
+          templates(user).some((t) => t.panelId === body.panelId && t.inboundId === body.inboundId),
           400,
           'Select an approved template.',
         );
@@ -433,6 +495,7 @@ export async function createApp(config, overrides = {}) {
         const results = [];
         try {
           for (const [id, adapter] of adapters) {
+            if (!access.allowed(user, id)) continue;
             try {
               const rows = await adapter.snapshot();
               const clients = db

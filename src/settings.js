@@ -105,6 +105,7 @@ export function settingsRoutes({
           'Remove managed clients before removing this server.',
         );
         store.remove(id);
+        db.prepare('DELETE FROM user_panels WHERE panel_id=?').run(id);
         reload();
         audit(db, user.id, 'server.removed', id);
         send({ ok: true });

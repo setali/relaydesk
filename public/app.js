@@ -7,6 +7,7 @@ const state = {
   clients: [],
   users: [],
   templates: [],
+  panels: [],
   events: [],
   demo: false,
 };
@@ -48,6 +49,8 @@ function showLogin() {
   state.clients = [];
   state.users = [];
   state.events = [];
+  state.templates = [];
+  state.panels = [];
   document.querySelectorAll('dialog[open]').forEach((d) => d.close());
   $('#client-rows').replaceChildren();
   $('#reseller-cards').replaceChildren();
@@ -84,6 +87,7 @@ function status(client) {
   return ['Enabled', 'active'];
 }
 function render() {
+  $('#server-onboarding').hidden = state.user.role !== 'admin' || state.panels.length > 0;
   const clients = state.clients,
     used = clients.reduce((sum, c) => sum + c.up + c.down, 0),
     quota = clients.reduce((sum, c) => sum + c.quota_gb, 0);
@@ -146,7 +150,7 @@ function renderResellers() {
     ? resellers
         .map((u) => {
           const clients = state.clients.filter((c) => c.owner_id === u.id);
-          return `<article class="reseller-card"><span class="avatar">${escape(u.name.slice(0, 1).toUpperCase())}</span><h2>${escape(u.name)}</h2><p>${escape(u.email)}</p><dl><dt>Client slots</dt><dd>${clients.length} / ${number(u.max_clients)}</dd><dt>Allocated</dt><dd>${number(clients.reduce((s, c) => s + c.quota_gb, 0))} / ${number(u.quota_gb)} GiB</dd><dt>Recorded usage</dt><dd>${gib(clients.reduce((s, c) => s + c.up + c.down, 0))} GiB</dd></dl></article>`;
+          return `<article class="reseller-card"><span class="avatar">${escape(u.name.slice(0, 1).toUpperCase())}</span><h2>${escape(u.name)}</h2><p>${escape(u.email)}</p><dl><dt>Client slots</dt><dd>${clients.length} / ${number(u.max_clients)}</dd><dt>Allocated</dt><dd>${number(clients.reduce((s, c) => s + c.quota_gb, 0))} / ${number(u.quota_gb)} GiB</dd><dt>Recorded usage</dt><dd>${gib(clients.reduce((s, c) => s + c.up + c.down, 0))} GiB</dd></dl><p>${u.panelIds.length} allowed server${u.panelIds.length === 1 ? '' : 's'}</p><button type="button" class="secondary" data-access="${escape(u.id)}">Manage server access</button></article>`;
         })
         .join('')
     : '<div class="empty"><strong>A place for your first team member.</strong><p>Create an account with its own client slots and allocation budget.</p></div>';
@@ -199,7 +203,8 @@ function changeView(view) {
       'Manage your login and the servers behind your connections.',
     ],
   }[view];
-  $('#breadcrumb').textContent = view[0].toUpperCase() + view.slice(1);
+  $('#breadcrumb').textContent =
+    view === 'resellers' ? 'Team' : view[0].toUpperCase() + view.slice(1);
   [
     $('#page-eyebrow').textContent,
     $('#page-title').textContent,
@@ -275,15 +280,68 @@ $('#new-client').addEventListener('click', () => {
   $('#owner-options').innerHTML = state.users
     .map((u) => `<option value="${escape(u.id)}">${escape(u.name)}</option>`)
     .join('');
-  $('#template-options').innerHTML = state.templates
-    .map((t, i) => `<option value="${i}">${escape(t.name)}</option>`)
-    .join('');
+  renderTemplateOptions();
   $('#client-dialog').showModal();
 });
 $('#new-reseller').addEventListener('click', () => {
   $('#reseller-form').reset();
   $('#reseller-form .error').textContent = '';
+  renderServerOptions('#member-server-options', []);
   $('#reseller-dialog').showModal();
+});
+function renderServerOptions(selector, selected) {
+  $(selector).innerHTML =
+    state.panels
+      .map(
+        (panel) =>
+          `<div class="inbound-option"><label><input type="checkbox" value="${escape(panel.id)}" ${selected.includes(panel.id) ? 'checked' : ''}> ${escape(panel.name)}</label></div>`,
+      )
+      .join('') ||
+    '<p class="form-note">Connect a server in Settings first. Access can be assigned later.</p>';
+}
+function selectedServers(selector) {
+  return [...$(selector).querySelectorAll('input:checked')].map((input) => input.value);
+}
+function renderTemplateOptions() {
+  const owner = state.users.find((u) => u.id === $('#owner-options').value) || state.user;
+  $('#template-options').innerHTML = state.templates
+    .map((t, i) =>
+      owner.role === 'admin' || owner.panelIds?.includes(t.panelId)
+        ? `<option value="${i}">${escape(t.server)} — ${escape(t.name)}</option>`
+        : '',
+    )
+    .join('');
+  $('#client-form [type=submit]').disabled = !$('#template-options').options.length;
+}
+$('#owner-options').addEventListener('change', renderTemplateOptions);
+$('#connect-first-server').addEventListener('click', () => changeView('settings'));
+$('#reseller-cards').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-access]');
+  if (!button) return;
+  const member = state.users.find((u) => u.id === button.dataset.access);
+  $('#access-form').dataset.id = member.id;
+  $('#access-form .error').textContent = '';
+  $('#access-member-name').textContent = member.name;
+  renderServerOptions('#edit-server-options', member.panelIds);
+  $('#access-dialog').showModal();
+});
+$('#access-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget,
+    button = form.querySelector('[type=submit]');
+  button.disabled = true;
+  try {
+    await api(`/members/${form.dataset.id}/servers`, 'PATCH', {
+      panelIds: selectedServers('#edit-server-options'),
+    });
+    $('#access-dialog').close();
+    await refresh();
+    toast('Server access saved.');
+  } catch (error) {
+    form.querySelector('.error').textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
 });
 $('#client-form').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -327,6 +385,7 @@ $('#reseller-form').addEventListener('submit', async (event) => {
       ...values,
       maxClients: Number(values.maxClients),
       quotaGB: Number(values.quotaGB),
+      panelIds: selectedServers('#member-server-options'),
     });
     form.reset();
     $('#reseller-dialog').close();

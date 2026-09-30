@@ -6,15 +6,12 @@ import { pathToFileURL } from 'node:url';
 import { createApp } from './app.js';
 import { configFromEnv } from './config.js';
 import { token } from './security.js';
-import { ThreeXUI } from './panel.js';
-import { validatePanel } from './panel-store.js';
 import { detectPublicIPv4, publicIPv4 } from './public-ip.js';
 
 export async function runSetup({
   ask,
   print,
   runtimeFile,
-  discover = (panel) => new ThreeXUI(panel).discover(),
   host = '127.0.0.1',
   detectAddress = async () => '',
 }) {
@@ -63,66 +60,6 @@ export async function runSetup({
   const username = 'admin';
   const contact = 'admin@relaydesk.local';
   const secret = token();
-  const panels = [];
-  if ((await ask('Connect a 3x-ui server now? [y/N]: ')).trim().toLowerCase() === 'y') {
-    print(
-      'In token-capable 3x-ui releases: Panel Settings → Authentication → API Token. Create a dedicated token for Relaydesk; location may vary by release.',
-    );
-    print(
-      'Use the full HTTPS panel URL including its private base path. Cookie-only and v3-only APIs are not supported in this release.',
-    );
-    const id = 'primary';
-    const name = (await ask('Server display name [Primary server]: ')).trim() || 'Primary server';
-    const baseUrl = (
-      await ask(
-        'Full 3x-ui HTTPS URL including port and private path (example: https://panel.example.com:2053/your-path/): ',
-      )
-    ).trim();
-    const apiToken = await ask('Panel API token (hidden): ', true);
-    const subscriptionBaseUrl = (await ask('Subscription HTTPS base URL (optional): ')).trim();
-    const panel = validatePanel({
-      id,
-      name,
-      baseUrl,
-      token: apiToken,
-      subscriptionBaseUrl,
-      inbounds: [],
-    });
-    let rows;
-    try {
-      rows = await discover(panel);
-    } catch {
-      throw new Error(
-        'Panel verification failed. Check HTTPS, token permissions, the full URL and API version. Nothing was installed.',
-      );
-    }
-    if (!rows.length)
-      throw new Error('No supported VLESS/VMess inbounds were found. Nothing was installed.');
-    for (const row of rows) print(`${row.id}: ${row.name} (${row.protocol})`);
-    const selected = (await ask('Allowed inbound IDs, comma separated: '))
-      .split(',')
-      .map((value) => Number(value.trim()));
-    if (
-      !selected.length ||
-      selected.some((id) => !rows.some((row) => row.id === id)) ||
-      new Set(selected).size !== selected.length
-    )
-      throw new Error('Choose valid unique inbound IDs.');
-    panel.inbounds = [];
-    for (const id of selected) {
-      const row = rows.find((r) => r.id === id);
-      const flow =
-        row.protocol === 'vless' &&
-        (await ask(`Use Vision flow for inbound ${id}? [y/N]: `)).trim().toLowerCase() === 'y'
-          ? 'xtls-rprx-vision'
-          : '';
-      panel.inbounds.push({ id, name: row.name, flow });
-    }
-    panels.push(validatePanel(panel));
-    print(
-      'Read access verified. Test one disposable client before using this panel in production.',
-    );
-  }
   mkdirSync(directory, { recursive: true, mode: 0o700 });
   const config = configFromEnv({
     PUBLIC_ORIGIN: origin,
@@ -132,7 +69,7 @@ export async function runSetup({
     ADMIN_EMAIL: contact,
     ADMIN_USERNAME: username,
     ADMIN_PASSWORD: secret,
-    PANELS_JSON: JSON.stringify(panels),
+    PANELS_JSON: '[]',
   });
   const { db } = await createApp(config);
   db.close();
@@ -143,7 +80,7 @@ export async function runSetup({
   print(`Setup complete. Username: ${username}`);
   print(`Generated administrator password (shown once): ${secret}`);
   print(
-    `URL: ${origin}\nPut an HTTPS reverse proxy in front of the local port. Change credentials and manage servers under Settings.`,
+    `URL: ${origin}\nFinish HTTPS setup, then sign in and use Settings → Connect server to add your 3x-ui panels. Change credentials under Settings.`,
   );
   return { file, username, origin };
 }

@@ -54,7 +54,7 @@ On a Linux server, run one command (no Git or manual clone needed):
 curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash
 ```
 
-Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.3.1 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
+Already root? Replace `sudo bash` with `bash`. Review the [bootstrap script](https://github.com/setali/relaydesk/blob/main/bootstrap.sh) before executing downloaded code with administrator privileges. It downloads a pinned v0.4.0 source revision, verifies SHA-256, installs under `/opt/relaydesk`, and opens the setup wizard. GitHub and Docker registries must be reachable.
 
 Existing Docker installations are left unchanged. If Docker is missing on Ubuntu or Debian (amd64/arm64), with the required packages available in Docker’s official stable repository for that release, the installer offers an explicit opt-in installation from Docker's official apt repository. It refuses conflicting container runtimes and existing Relaydesk data. Use a public IPv4 or configure DNS for your domain first. The wizard offers automatic HTTPS on free ports 80/443; an existing reverse proxy is never modified. See [HTTPS setup](docs/HTTPS.md).
 
@@ -64,7 +64,9 @@ Alternatively, from a trusted source checkout with Docker and Compose already in
 bash install.sh
 ```
 
-The wizard asks for a public HTTPS origin and optionally a 3x-ui URL and token. It automatically creates the independent `admin` account and displays its random password once after setup succeeds. Save it securely; change your username/password in Settings later. The first server's internal ID is assigned automatically. The wizard verifies read access, lists supported inbounds, and lets you approve them. Token entry is hidden. Supply the full 3x-ui HTTPS URL, including any custom port and private base path.
+The terminal wizard only configures Relaydesk's address and independent `admin` account, displaying its random password once after setup succeeds. Save it securely and finish HTTPS setup. Sign in, then use **Settings → Connect server** to add one or more 3x-ui panels, test connections and select approved inbounds. Server IDs are generated automatically. Supply the full HTTPS panel URL, including any custom port and private base path; API tokens stay on the server.
+
+When creating a team member, select their **Allowed servers**. Use **Manage server access** to change this later. No selection means no access; newly connected servers are never granted automatically. Members see only their own clients on assigned servers. Administrators retain access to all servers, but cannot create a client for a member on an unassigned server. Revoking access blocks management, not the existing VPN connection itself; its allocation remains reserved until an administrator removes it.
 
 The installer builds this checkout, stores data in a named Docker volume, starts an unprivileged container, and binds HTTP only to loopback. Choose managed HTTPS after setup, or configure your existing HTTPS reverse proxy to forward to the selected local port. It does not change your firewall or existing services. You need no hand-edited `.env` for this path.
 

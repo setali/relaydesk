@@ -25,6 +25,7 @@ db.prepare(
   500,
   Date.now(),
 );
+db.prepare('INSERT INTO user_panels(user_id,panel_id) VALUES(?,?)').run(reseller, 'demo');
 for (const [index, name] of [
   'Personal MacBook',
   'Studio team',

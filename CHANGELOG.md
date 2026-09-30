@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
+
+- Move all 3x-ui connection configuration to Settings, with first-server onboarding and automatic internal IDs.
+- Add per-member multi-server assignment on creation and editing, enforced for client operations, templates and usage sync.
+- Preserve existing member access during the schema v3 upgrade; new servers and members require explicit grants. Revocation does not change running VPN connections.
 
 - Create the initial admin account with a random password automatically, assign the first server ID internally, and clarify the API token location and full panel URL prompt.
 

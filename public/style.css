@@ -766,6 +766,20 @@ form > .danger {
   line-height: 1.7;
   margin: 8px 0;
 }
+#access-form fieldset,
+#reseller-form fieldset {
+  border: 1px solid #dae2d2;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-top: 16px;
+  min-width: 0;
+}
+#access-form legend,
+#reseller-form legend {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 5px;
+}
 .error {
   color: #ac4438;
   font-size: 12px;

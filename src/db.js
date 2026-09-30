@@ -5,7 +5,7 @@ export function openDatabase(path) {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const db = new DatabaseSync(path);
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 2) {
+  if (version > 3) {
     db.close();
     throw new Error('Database is newer than this application. Restore a compatible release.');
   }
@@ -45,6 +45,23 @@ export function openDatabase(path) {
         CREATE UNIQUE INDEX users_username ON users(username);
         CREATE TABLE panels(id TEXT PRIMARY KEY, settings TEXT NOT NULL, token_cipher TEXT NOT NULL, updated_at INTEGER NOT NULL);
         PRAGMA user_version=2;`);
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      db.close();
+      throw error;
+    }
+  }
+  if (version < 3) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec(`
+      CREATE TABLE user_panels (
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        panel_id TEXT NOT NULL,
+        PRIMARY KEY(user_id,panel_id)
+      );
+      PRAGMA user_version=3;`);
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');

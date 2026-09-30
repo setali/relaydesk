@@ -27,7 +27,7 @@ export function initSettings({ api, state, escape, toast, showLogin, refresh }) 
     $('#probe-note').textContent = '';
     for (const field of ['id', 'name', 'baseUrl', 'subscriptionBaseUrl'])
       form.elements[field].value = panel?.[field] || '';
-    form.elements.id.readOnly = !!panel;
+    form.elements.id.value = panel?.id || crypto.randomUUID();
     form.elements.token.required = !panel;
     selected = panel?.inbounds || [];
     discovered = selected.map((i) => ({ ...i, protocol: i.flow ? 'vless' : 'approved' }));

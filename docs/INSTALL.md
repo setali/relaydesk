@@ -8,7 +8,7 @@ For a Linux server, run:
 curl -fsSL https://raw.githubusercontent.com/setali/relaydesk/main/bootstrap.sh | sudo bash
 ```
 
-Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.3.1 application revision `c4104e07e0782f30414955c62e568a7dd670d5a7`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
+Use `bash` instead of `sudo bash` if already logged in as root. This is an interactive installer; it reads prompts from your terminal even when piped. No Git, Node.js, GitHub token, or manual clone is required. Bash, curl, tar and sha256sum must be present. It installs under `/opt/relaydesk` and downloads the reviewed v0.4.0 application revision `c4104e07e0782f30414955c62e568a7dd670d5a7`, not a moving branch archive. SHA-256 verification happens before extraction or execution. A checksum mismatch stops installation.
 
 **Trust boundary:** the entry script is fetched from this repository's `main` branch. Its pinned archive checksum detects changed or incomplete downloads; it is not an independent signature against a compromised repository. Review the script before running it with root privileges. To inspect it first:
 
@@ -43,13 +43,13 @@ bash install.sh
 
 The local `install.sh` requires Bash, Docker Engine, Compose with `up --wait-timeout`, and permission to use Docker. It builds the downloaded source and runs the wizard; dependency installation belongs to `bootstrap.sh` only.
 
-The wizard asks for a local HTTP port, panel domain/public IPv4 (HTTPS is added automatically), and optionally the first 3x-ui connection. It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server.
+The wizard asks only for a local HTTP port and Relaydesk domain/public IPv4 (HTTPS is added automatically). It checks `https://api.ipify.org` once during setup (three-second timeout) and shows the detected public IPv4 as the address default: press Enter to accept it or enter a different IP/domain. If detection fails, enter the address manually. Behind NAT, verify the detected outbound IP actually reaches this server.
 
 Setup automatically creates the independent `admin` account with a cryptographically random password, displayed once after successful setup. Save it securely. The initial contact is `admin@relaydesk.local`; no mailbox is required. You can change your username/password in Settings. Existing accounts are never reset by setup.
 
-For the optional 3x-ui connection, supply a display name, full HTTPS panel URL (including any custom port and private path, for example `https://panel.example.com:2053/your-path/`), API token, optional subscription URL, and approved inbound IDs. Its internal server ID is assigned automatically; it is not a value from 3x-ui. Select Vision only when required by a VLESS inbound. Token input is hidden.
+After signing in, use **Settings → Connect server** for each 3x-ui panel. Supply a display name, full HTTPS panel URL (including any custom port and private path, for example `https://panel.example.com:2053/your-path/`), API token and optional subscription URL. Test the connection, select approved inbounds, then save. The internal server ID is generated automatically. Select Vision only when required by a VLESS inbound. Token input is hidden.
 
-Failed panel verification stops before creating an installation. Existing databases are never overwritten. You can skip the panel and add it in Settings later. No hand-edited `.env` is required.
+Failed panel verification shows an error in the browser without affecting the Relaydesk installation. Existing databases are never overwritten. No hand-edited `.env` is required.
 
 The Compose project is `relaydesk`; its named `relaydesk_relaydesk-data` volume holds `runtime.json`, `relaydesk.sqlite`, and `master.key`. Do not take over an unrelated Compose project with that name. `.install.env` stores only the selected local port. Keep the checkout for lifecycle commands:
 
@@ -90,13 +90,15 @@ Replace the hostname and port. Add this to your existing proxy configuration as 
 
 In token-capable Sanaei releases, open **Panel Settings → Authentication → API Token** and create a dedicated credential. A login password is not an API token. UI placement varies by release; consult the [official 3x-ui project](https://github.com/MHSanaei/3x-ui).
 
-This release requires bearer authentication on v2 inbound-scoped routes. Cookie-only or v3-only APIs need another adapter. The installer probes read access and response shape, not all write endpoints. Test creation, consumption sync and removal on a disposable client before production. Relaydesk never upgrades 3x-ui automatically.
+This release requires bearer authentication on v2 inbound-scoped routes. Cookie-only or v3-only APIs need another adapter. The Settings connection test probes read access and response shape, not all write endpoints. Test creation, consumption sync and removal on a disposable client before production. Relaydesk never upgrades 3x-ui automatically.
 
 ## Settings
 
 Sign in using the independent Relaydesk account. Settings lets every user change their display name, username and password after verifying the current password. Saving invalidates all that user's sessions, including the current one.
 
-Admins can connect servers, discover and approve inbounds, test existing connections, rotate tokens and remove unused servers. Blank token on edit keeps the old token; the backend never returns stored plaintext. Servers with managed clients cannot be removed or retargeted, and in-use inbounds cannot be unapproved. All members currently share the approved template set.
+Admins can connect multiple servers, discover and approve inbounds, test connections, rotate tokens and remove unused servers. Blank token on edit keeps the old token; the backend never returns stored plaintext. Servers with managed clients cannot be removed or retargeted, and in-use inbounds cannot be unapproved.
+
+Select **Allowed servers** when creating a member; edit them with **Manage server access**. An empty selection grants nothing. Access checks protect template discovery, client reads/creation/deletion, request replay and usage sync. New servers require explicit assignment. Revoking access does not delete or disable existing VPN clients and does not release their allocation. Administrators can still manage them. Access edits wait for that member's in-flight operations.
 
 ## Native installation
 
@@ -111,7 +113,7 @@ There are no npm dependencies to install. Default storage is `./data`. Set `RELA
 
 ## Upgrade from v0.1
 
-Stop the old service and back up its data/environment. Keep its original database volume and deployment method; do not run initial setup over it. Startup migrates v1 to v2 transactionally, preserves accounts and clients, and initializes usernames from existing email logins.
+Stop the old service and back up its data/environment. Keep its original database volume and deployment method; do not run initial setup over it. Startup upgrades the schema to v3, preserving accounts, clients and history. The v1 upgrade initializes usernames from existing email logins. The v3 upgrade grants existing members access to currently configured servers once, preserving previous behavior; review these grants after upgrading. Later servers are not granted automatically, and removed grants stay removed across restarts. Older releases reject a v3 database: rollback requires the previous release and its matching pre-upgrade data snapshot. Do not run old and new versions against the same database.
 
 `PANELS_JSON` is imported once into encrypted storage. Subsequent settings edits are authoritative and are not overwritten on restart. After verifying import, remove plaintext panel tokens from the legacy environment and back up the new master key.
 
